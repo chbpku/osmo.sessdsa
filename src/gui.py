@@ -97,6 +97,7 @@ class Application(tk.Frame):
             for i in range_x:
                 for j in range_y:
                     self.canvas.create_oval(coords[0] + i * Consts["WORLD_X"], coords[1] + j * Consts["WORLD_Y"], coords[2] + i * Consts["WORLD_X"], coords[3] + j * Consts["WORLD_Y"], fill = color)
+            #self.canvas.create_text(cell.pos, fill = "darkblue", font = "Times 20 italic bold", text = "@")
 
 if __name__ == "__main__":
     root = tk.Tk()

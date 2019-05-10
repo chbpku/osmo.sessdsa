@@ -29,6 +29,8 @@ Consts = {
     "FPS": 30,
     # FRAME_DELTA
     "FRAME_DELTA": 3,
+    # DELTA_VELOC
+    "DELTA_VELOC": 0.5,
 
     "NEW_PLAYER_LAG": 60,
     "LEADERBOARD_NUM": 5,

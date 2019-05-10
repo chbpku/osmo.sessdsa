@@ -48,11 +48,14 @@ class World():
         # Reduce force in proportion to area
         fx = math.sin(theta)
         fy = math.cos(theta)
+        # DELTA_VELOC
+        delta_veloc_x = Consts["DELTA_VELOC"] * fx / Consts["EJECT_MASS_RATIO"]
+        delta_veloc_y = Consts["DELTA_VELOC"] * fy / Consts["EJECT_MASS_RATIO"]
         # Push player
-        new_veloc_x = player.veloc[0] + fx / Consts["EJECT_MASS_RATIO"]
-        new_veloc_y = player.veloc[1] + fy / Consts["EJECT_MASS_RATIO"]
-        player.veloc[0] -= fx
-        player.veloc[1] -= fy
+        new_veloc_x = player.veloc[0] + delta_veloc_x * (1 - Consts["EJECT_MASS_RATIO"])
+        new_veloc_y = player.veloc[1] + delta_veloc_y * (1 - Consts["EJECT_MASS_RATIO"])
+        player.veloc[0] -= delta_veloc_x * Consts["EJECT_MASS_RATIO"]
+        player.veloc[1] -= delta_veloc_y * Consts["EJECT_MASS_RATIO"]
         # Shoot off the expended mass in opposite direction
         newrad = player.radius * Consts["EJECT_MASS_RATIO"] ** 0.5
         # Lose some mass (shall we say, Consts["EJECT_MASS_RATIO"]?)
@@ -61,6 +64,7 @@ class World():
         new_pos_y = player.pos[1] + fy * (player.radius + newrad)
         newcell = Cell([new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
         newcell.stay_in_bounds()
+        newcell.limit_speed()
         self.cells.append(newcell)
 
     def absorb(self, collision):
