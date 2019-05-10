@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 
 import tkinter as tk
+import math
 import time
 
 from consts import Consts
@@ -42,9 +43,6 @@ class Application(tk.Frame):
     def reset(self):
         self.world.reset()
 
-    def on_mousewheel(self, event):
-        print(event.delta)
-
     def create_widgets(self):
         self.button = {}
         self.button["play"] = tk.Button(self, text = "PAUSE", command = self.play)
@@ -58,6 +56,17 @@ class Application(tk.Frame):
 
     def create_event_listener(self):
         self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+        self.canvas.bind_all("<Button-1>", self.on_click)
+
+    def on_mousewheel(self, event):
+        print(event.delta)
+
+    def on_click(self, event):
+        cell = self.world.cells[0]
+        if not cell.dead:
+            #print(event.x, event.y, cell.pos[0], cell.pos[1])
+            theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
+            self.world.eject(cell, theta)
 
     def refresh_screen(self):
         # Advance timer
@@ -75,15 +84,19 @@ class Application(tk.Frame):
                 continue
             color = "green" if cell.isplayer else "cyan"
             coords = [cell.pos[0] - cell.radius, cell.pos[1] - cell.radius, cell.pos[0] + cell.radius, cell.pos[1] + cell.radius]
-            self.canvas.create_oval(coords, fill = color)
+            range_x = [0]
+            range_y = [0]
             if coords[0] < 0:
-                self.canvas.create_oval(coords[0] + Consts["WORLD_X"], coords[1], coords[2] + Consts["WORLD_X"], coords[3], fill = color)
+                range_x.append(1)
             if coords[1] < 0:
-                self.canvas.create_oval(coords[0], coords[1] + Consts["WORLD_Y"], coords[2], coords[3] + Consts["WORLD_Y"], fill = color)
+                range_y.append(1)
             if coords[2] > Consts["WORLD_X"]:
-                self.canvas.create_oval(coords[0] - Consts["WORLD_X"], coords[1], coords[2] - Consts["WORLD_X"], coords[3], fill = color)
+                range_x.append(-1)
             if coords[3] > Consts["WORLD_Y"]:
-                self.canvas.create_oval(coords[0], coords[1] - Consts["WORLD_Y"], coords[2], coords[3] - Consts["WORLD_Y"], fill = color)
+                range_y.append(-1)
+            for i in range_x:
+                for j in range_y:
+                    self.canvas.create_oval(coords[0] + i * Consts["WORLD_X"], coords[1] + j * Consts["WORLD_Y"], coords[2] + i * Consts["WORLD_X"], coords[3] + j * Consts["WORLD_Y"], fill = color)
 
 if __name__ == "__main__":
     root = tk.Tk()

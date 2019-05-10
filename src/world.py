@@ -16,14 +16,6 @@ import math
 from consts import Consts
 from cell import Cell
 
-def angle_for_vector(x, y):
-    ang = math.atan(y / x)
-    if x < 0:
-        ang += math.pi
-    elif y < 0:
-        ang += 2 * math.pi
-    return ang
-
 class World():
     def __init__(self):
         # Variables and setup
@@ -57,15 +49,17 @@ class World():
         fx = math.sin(theta)
         fy = math.cos(theta)
         # Push player
+        new_veloc_x = player.veloc[0] + fx / Consts["EJECT_MASS_RATIO"]
+        new_veloc_y = player.veloc[1] + fy / Consts["EJECT_MASS_RATIO"]
         player.veloc[0] -= fx
         player.veloc[1] -= fy
+        # Shoot off the expended mass in opposite direction
+        newrad = player.radius * Consts["EJECT_MASS_RATIO"] ** 0.5
         # Lose some mass (shall we say, Consts["EJECT_MASS_RATIO"]?)
         player.radius *= (1 - Consts["EJECT_MASS_RATIO"]) ** 0.5
-        # Shoot off the expended mass in opposite direction
-        newrad = player.radius * Consts["EJECT_MASS_RATIO"] * 0.5
-        newx = player.pos[0] - (fx * (player.radius + newrad + 1)) # The +1 is for cushioning!
-        newy = player.pos[1] - (fy * (player.radius + newrad + 1))
-        newcell = Cell([newx, newy], [fx / Consts["EJECT_MASS_RATIO"], fy / Consts["EJECT_MASS_RATIO"]], newrad)
+        new_pos_x = player.pos[0] + fx * (player.radius + newrad)
+        new_pos_y = player.pos[1] + fy * (player.radius + newrad)
+        newcell = Cell([new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
         newcell.stay_in_bounds()
         self.cells.append(newcell)
 
@@ -84,10 +78,11 @@ class World():
             self.cells[ele].dead = True
             # If we just killed the player, Game over
             if self.cells[ele].isplayer:
-                self.game_over()
+                self.game_over(ele)
 
-    def game_over(self):
+    def game_over(self, loser):
         self.result = True
+        print("Player {} lost".format(loser))
 
     def reset(self):
         for cell in self.cells:
@@ -109,10 +104,12 @@ class World():
                         self.cells[i].collide_group = self.cells[j].collide_group = len(collisions)
                         collisions.append([i, j])
                     elif self.cells[i].collide_group != None == self.cells[j].collide_group:
-                        collisions[self.cells[i].collide_group].append(i)
+                        collisions[self.cells[i].collide_group].append(j)
+                        self.cells[j].collide_group = self.cells[i].collide_group
                     elif self.cells[i].collide_group == None != self.cells[j].collide_group:
-                        collisions[self.cells[j].collide_group].append(j)
-                    else:
+                        collisions[self.cells[j].collide_group].append(i)
+                        self.cells[i].collide_group = self.cells[j].collide_group
+                    elif self.cells[i].collide_group != self.cells[j].collide_group:
                         collisions[self.cells[i].collide_group] += collisions[self.cells[j].collide_group]
                         for ele in collisions[self.cells[j].collide_group]:
                             self.cells[ele].collide_group = self.cells[i].collide_group
