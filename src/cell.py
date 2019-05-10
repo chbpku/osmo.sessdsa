@@ -48,12 +48,6 @@ class Cell():
     def area(self):
         return math.pi * self.radius * self.radius
 
-    def reset(self):
-        self.pos = self.default_pos
-        self.veloc = self.default_veloc
-        self.radius = self.default_radius
-        self.dead = False
-
     def stay_in_bounds(self):
         # Out of bounds
         if self.pos[0] < 0:

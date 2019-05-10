@@ -41,7 +41,7 @@ class Application(tk.Frame):
         self.button["play"]["text"] = "PLAY" if self.paused else "PAUSE"
 
     def reset(self):
-        self.world.reset()
+        self.world.load_game()
 
     def create_widgets(self):
         self.button = {}
@@ -55,8 +55,8 @@ class Application(tk.Frame):
         self.canvas.pack()
 
     def create_event_listener(self):
-        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
-        self.canvas.bind_all("<Button-1>", self.on_click)
+        self.canvas.bind("<MouseWheel>", self.on_mousewheel)
+        self.canvas.bind("<Button-1>", self.on_click)
 
     def on_mousewheel(self, event):
         print(event.delta)
@@ -64,7 +64,6 @@ class Application(tk.Frame):
     def on_click(self, event):
         cell = self.world.cells[0]
         if not cell.dead:
-            #print(event.x, event.y, cell.pos[0], cell.pos[1])
             theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
             self.world.eject(cell, theta)
 
@@ -83,7 +82,12 @@ class Application(tk.Frame):
             if cell.dead:
                 continue
             color = "green" if cell.isplayer else "cyan"
-            coords = [cell.pos[0] - cell.radius, cell.pos[1] - cell.radius, cell.pos[0] + cell.radius, cell.pos[1] + cell.radius]
+            coords = [
+                cell.pos[0] - cell.radius,
+                cell.pos[1] - cell.radius,
+                cell.pos[0] + cell.radius,
+                cell.pos[1] + cell.radius
+            ]
             range_x = [0]
             range_y = [0]
             if coords[0] < 0:
@@ -96,7 +100,13 @@ class Application(tk.Frame):
                 range_y.append(-1)
             for i in range_x:
                 for j in range_y:
-                    self.canvas.create_oval(coords[0] + i * Consts["WORLD_X"], coords[1] + j * Consts["WORLD_Y"], coords[2] + i * Consts["WORLD_X"], coords[3] + j * Consts["WORLD_Y"], fill = color)
+                    self.canvas.create_oval(
+                        coords[0] + i * Consts["WORLD_X"],
+                        coords[1] + j * Consts["WORLD_Y"],
+                        coords[2] + i * Consts["WORLD_X"],
+                        coords[3] + j * Consts["WORLD_Y"],
+                        fill = color, outline = ""
+                    )
             #self.canvas.create_text(cell.pos, fill = "darkblue", font = "Times 20 italic bold", text = "@")
 
 if __name__ == "__main__":

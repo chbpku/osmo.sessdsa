@@ -88,10 +88,6 @@ class World():
         self.result = True
         print("Player {} lost".format(loser))
 
-    def reset(self):
-        for cell in self.cells:
-            cell.reset()
-
     def update(self, frame_delta):
         # New frame
         for cell in self.cells:
