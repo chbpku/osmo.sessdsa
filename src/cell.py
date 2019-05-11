@@ -28,9 +28,6 @@ class Cell():
         self.isplayer = isplayer
 
         # Properties
-        self.default_pos = self.pos
-        self.default_veloc = self.veloc
-        self.default_radius = self.radius
         self.collide_group = None
         self.dead = False
 
