@@ -11,6 +11,7 @@
 #  GNU General Public License for more details.
 
 import tkinter as tk
+from platform import system
 import math
 import time
 
@@ -41,7 +42,7 @@ class Application(tk.Frame):
         self.button["play"]["text"] = "PLAY" if self.paused else "PAUSE"
 
     def reset(self):
-        self.world.load_game()
+        self.world.new_game()
 
     def create_widgets(self):
         self.button = {}
@@ -55,17 +56,18 @@ class Application(tk.Frame):
         self.canvas.pack()
 
     def create_event_listener(self):
-        self.canvas.bind("<MouseWheel>", self.on_mousewheel)
         self.canvas.bind("<Button-1>", self.on_click)
-
-    def on_mousewheel(self, event):
-        print(event.delta)
+        if system() != "Darwin":
+            self.canvas.bind("<MouseWheel>", self.on_mousewheel)
 
     def on_click(self, event):
         cell = self.world.cells[0]
         if not cell.dead:
             theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
             self.world.eject(cell, theta)
+
+    def on_mousewheel(self, event):
+        print(event.delta)
 
     def refresh_screen(self):
         # Advance timer

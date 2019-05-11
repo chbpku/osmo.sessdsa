@@ -22,10 +22,10 @@ class World():
         self.cells = [] # Array of cells
         self.result = None
         # Init
-        self.load_game()
+        self.new_game()
 
     # Methods
-    def load_game(self):
+    def new_game(self):
         self.cells = []
         # Define the players first
         self.cells.append(Cell([Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
@@ -43,6 +43,13 @@ class World():
             y = Consts["WORLD_Y"] * random.random()
             cell = Cell([x, y], [(random.random() - 0.5) * 0.35, (random.random() - 0.5) * 0.35], rad)
             self.cells.append(cell)
+
+    def save_game(self):
+        pass
+
+    def game_over(self, loser):
+        self.result = True
+        print("Player {} lost".format(loser))
 
     def eject(self, player, theta):
         # Reduce force in proportion to area
@@ -84,11 +91,9 @@ class World():
             if self.cells[ele].isplayer:
                 self.game_over(ele)
 
-    def game_over(self, loser):
-        self.result = True
-        print("Player {} lost".format(loser))
-
     def update(self, frame_delta):
+        # Save
+        self.save_game()
         # New frame
         for cell in self.cells:
             if not cell.dead:
