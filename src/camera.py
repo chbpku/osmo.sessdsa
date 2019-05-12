@@ -14,7 +14,6 @@ import tkinter as tk
 import time
 
 from consts import Consts
-from player import Player
 from world import World
 
 class Camera():

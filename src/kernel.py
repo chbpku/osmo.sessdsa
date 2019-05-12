@@ -13,7 +13,6 @@
 import time
 
 from consts import Consts
-from player import Player
 from world import World
 
 if __name__ == "__main__":

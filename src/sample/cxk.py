@@ -23,6 +23,5 @@ class Player():
         min_cell = sorted(allcells, key = lambda cell: cell.radius)[0]
         dx = abs(allcells[id].pos[0] - min_cell.pos[0])
         dy = abs(allcells[id].pos[1] - min_cell.pos[1])
-        theta = math.atan(dx / dy)
+        return math.atan(dx / dy) if dy != 0 else None
         # This can be adjusted, only uses the dx and dy
-        return theta
