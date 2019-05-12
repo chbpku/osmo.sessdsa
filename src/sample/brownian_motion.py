@@ -15,13 +15,10 @@ import random
 import math
 
 class Player():
-    # only move to the smallers
     def __init__(self):
         pass
 
     def strategy(self, id, allcells):
-        min_cell = sorted(allcells, key = lambda cell: cell.radius)[0]
-        dx = abs(allcells[id].pos[0] - min_cell.pos[0])
-        dy = abs(allcells[id].pos[1] - min_cell.pos[1])
-        theta = math.atan(dx / dy)# this can be adjusted, only uses the dx and dy
+        # Random angle
+        theta = 2 * math.pi * random.random()
         return theta

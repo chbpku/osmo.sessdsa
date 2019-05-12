@@ -39,17 +39,23 @@ class Application(tk.Frame):
 
     def play(self):
         self.paused = not self.paused
-        self.button["play"]["text"] = "PLAY" if self.paused else "PAUSE"
+        self.widget["play"]["text"] = "PLAY" if self.paused else "PAUSE"
 
     def reset(self):
         self.world.new_game()
 
     def create_widgets(self):
-        self.button = {}
-        self.button["play"] = tk.Button(self, text = "PAUSE", command = self.play)
-        self.button["play"].pack(side = "left")
-        self.button["reset"] = tk.Button(self, text = "RESET", command = self.reset)
-        self.button["reset"].pack(side = "left")
+        self.widget = {}
+        self.widget["play"] = tk.Button(self, text = "PAUSE", command = self.play)
+        self.widget["play"].pack(side = "left")
+        self.widget["reset"] = tk.Button(self, text = "RESET", command = self.reset)
+        self.widget["reset"].pack(side = "left")
+        self.cells_count = tk.StringVar()
+        self.widget["cells_count"] = tk.Label(self, textvariable = self.cells_count)
+        self.widget["cells_count"].pack(side = "left")
+        self.frame_count = tk.StringVar()
+        self.widget["frame_count"] = tk.Label(self, textvariable = self.frame_count)
+        self.widget["frame_count"].pack(side = "left")
 
     def create_canvas(self):
         self.canvas = tk.Canvas(self.master, bg = "blue", width = Consts["WORLD_X"], height = Consts["WORLD_Y"])
@@ -76,8 +82,12 @@ class Application(tk.Frame):
         self.master.after(int(1000 / Consts["FPS"]), self.refresh_screen)
         if self.paused:
             return
+        # Update Label
+        self.cells_count.set("COUNT:" + str(self.world.cells_count))
+        self.frame_count.set("FRAME:" + str(self.world.frame_count))
+        # Update World
         self.world.update(Consts["FRAME_DELTA"])
-
+        # Clear canvas
         self.canvas.delete("all")
         for cell in self.world.cells:
             if cell.dead:

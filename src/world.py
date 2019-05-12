@@ -16,13 +16,15 @@ import math
 from consts import Consts
 from cell import Cell
 
-from sample.easy_ai1 import Player as Player1
-from sample.easy_ai0 import Player as Player0
+from sample.brownian_motion import Player as Player0
+from sample.cxk import Player as Player1
 
 class World():
     def __init__(self):
         # Variables and setup
         self.cells = [] # Array of cells
+        self.cells_count = 0
+        self.frame_count = 0
         self.result = None
         # Init
         self.new_game()
@@ -32,6 +34,7 @@ class World():
     # Methods
     def new_game(self):
         self.cells = []
+        self.frame_count = 0
         # Define the players first
         self.cells.append(Cell([Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
         self.cells.append(Cell([Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
@@ -39,14 +42,14 @@ class World():
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
                 rad = 3 + (random.random() * 3) # Small cells
-            elif i < 6:
+            elif i < 10:
                 rad = 20 + (random.random() * 8) # Big cells
             else:
                 rad = 4 + (random.random() * 18) # Everything else
             ang = random.random() * 2 * math.pi
             x = Consts["WORLD_X"] * random.random()
             y = Consts["WORLD_Y"] * random.random()
-            cell = Cell([x, y], [(random.random() - 0.5) * 0.35, (random.random() - 0.5) * 0.35], rad)
+            cell = Cell([x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
             self.cells.append(cell)
 
     def save_game(self):
@@ -73,10 +76,10 @@ class World():
         player.radius *= (1 - Consts["EJECT_MASS_RATIO"]) ** 0.5
         new_pos_x = player.pos[0] + fx * (player.radius + newrad)
         new_pos_y = player.pos[1] + fy * (player.radius + newrad)
-        newcell = Cell([new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
-        newcell.stay_in_bounds()
-        newcell.limit_speed()
-        self.cells.append(newcell)
+        new_cell = Cell([new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
+        new_cell.stay_in_bounds()
+        new_cell.limit_speed()
+        self.cells.append(new_cell)
 
     def absorb(self, collision):
         # Calculate total momentum and mass
@@ -99,6 +102,7 @@ class World():
         # Save
         self.save_game()
         # New frame
+        self.frame_count += 1
         for cell in self.cells:
             if not cell.dead:
                 cell.move(frame_delta)
@@ -128,8 +132,11 @@ class World():
             if collision != []:
                 self.absorb(collision)
         # Eject!
-        theta0 = self.player0.strategy(0, self.cells.copy())
-        theta1 = self.player1.strategy(1, self.cells.copy())
+        allcells = self.cells.copy()
+        allcells = [cell for cell in allcells if cell.dead == False]
+        self.cells_count = len(allcells)
+        theta0 = self.player0.strategy(0, allcells)
+        theta1 = self.player1.strategy(1, allcells)
         if theta0:
             self.eject(self.cells[0], theta0)
         if theta1:

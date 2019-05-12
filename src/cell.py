@@ -14,7 +14,7 @@ import math
 
 from consts import Consts
 
-# Super-class of Ball and Player
+# Super-class of Cell and Player
 # Handles physical attributes and actions
 class Cell():
     def __init__(self, pos = [0, 0], veloc = [0, 0], radius = Consts["DEFAULT_RADIUS"], isplayer = False):
