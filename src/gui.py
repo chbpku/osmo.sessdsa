@@ -62,9 +62,8 @@ class Application(tk.Frame):
 
     def on_click(self, event):
         cell = self.world.cells[0]
-        if not cell.dead:
-            theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
-            self.world.eject(cell, theta)
+        theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
+        self.world.eject(cell, theta)
 
     def on_mousewheel(self, event):
         print(event.delta)

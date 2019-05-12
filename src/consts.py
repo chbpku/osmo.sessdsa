@@ -26,11 +26,11 @@ Consts = {
     # EJECT_MASS_RATIO
     "EJECT_MASS_RATIO": 0.04,
     # FPS
-    "FPS": 30,
+    "FPS": 15,
     # FRAME_DELTA
     "FRAME_DELTA": 3,
     # DELTA_VELOC
-    "DELTA_VELOC": 0.5,
+    "DELTA_VELOC": 1,
 
     "NEW_PLAYER_LAG": 60,
     "LEADERBOARD_NUM": 5,

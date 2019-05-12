@@ -16,6 +16,9 @@ import math
 from consts import Consts
 from cell import Cell
 
+from sample.easy_ai1 import Player as Player1
+from sample.easy_ai0 import Player as Player0
+
 class World():
     def __init__(self):
         # Variables and setup
@@ -23,6 +26,8 @@ class World():
         self.result = None
         # Init
         self.new_game()
+        self.player0 = Player0()
+        self.player1 = Player1()
 
     # Methods
     def new_game(self):
@@ -49,20 +54,19 @@ class World():
 
     def game_over(self, loser):
         self.result = True
-        print("Player {} lost".format(loser))
+        print("Player {} dead".format(loser))
 
     def eject(self, player, theta):
+        if player.dead:
+            return
         # Reduce force in proportion to area
         fx = math.sin(theta)
         fy = math.cos(theta)
-        # DELTA_VELOC
-        delta_veloc_x = Consts["DELTA_VELOC"] * fx / Consts["EJECT_MASS_RATIO"]
-        delta_veloc_y = Consts["DELTA_VELOC"] * fy / Consts["EJECT_MASS_RATIO"]
         # Push player
-        new_veloc_x = player.veloc[0] + delta_veloc_x * (1 - Consts["EJECT_MASS_RATIO"])
-        new_veloc_y = player.veloc[1] + delta_veloc_y * (1 - Consts["EJECT_MASS_RATIO"])
-        player.veloc[0] -= delta_veloc_x * Consts["EJECT_MASS_RATIO"]
-        player.veloc[1] -= delta_veloc_y * Consts["EJECT_MASS_RATIO"]
+        new_veloc_x = player.veloc[0] + Consts["DELTA_VELOC"] * fx * (1 - Consts["EJECT_MASS_RATIO"])
+        new_veloc_y = player.veloc[1] + Consts["DELTA_VELOC"] * fy * (1 - Consts["EJECT_MASS_RATIO"])
+        player.veloc[0] -= Consts["DELTA_VELOC"] * fx * Consts["EJECT_MASS_RATIO"]
+        player.veloc[1] -= Consts["DELTA_VELOC"] * fy * Consts["EJECT_MASS_RATIO"]
         # Shoot off the expended mass in opposite direction
         newrad = player.radius * Consts["EJECT_MASS_RATIO"] ** 0.5
         # Lose some mass (shall we say, Consts["EJECT_MASS_RATIO"]?)
@@ -123,3 +127,10 @@ class World():
         for collision in collisions:
             if collision != []:
                 self.absorb(collision)
+        # Eject!
+        theta0 = self.player0.strategy(0, self.cells.copy())
+        theta1 = self.player1.strategy(1, self.cells.copy())
+        if theta0:
+            self.eject(self.cells[0], theta0)
+        if theta1:
+            self.eject(self.cells[1], theta1)
