@@ -18,12 +18,15 @@ import time
 from consts import Consts
 from world import World
 
+from sample.brownian_motion import Player as Player0
+from sample.cxk import Player as Player1
+
 class Application(tk.Frame):
     def __init__(self, master = None):
         super().__init__(master)
         self.master = master
         self.master.title("Osmo")
-        self.world = World()
+        self.world = World(Player0(0), Player1(1))
         self.paused = False
         # For timer
         self.frame_delta = None

@@ -13,5 +13,9 @@
 from consts import Consts
 
 class Player():
-    def __init__(self, arg):
+    def __init__(self, id, arg = None):
+    	self.id = id
         pass
+
+    def strategy(self, allcells):
+    	pass

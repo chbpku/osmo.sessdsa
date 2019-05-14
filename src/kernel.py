@@ -15,8 +15,11 @@ import time
 from consts import Consts
 from world import World
 
+from sample.brownian_motion import Player as Player0
+from sample.cxk import Player as Player1
+
 if __name__ == "__main__":
-    world = World()
+    world = World(Player0(0), Player1(1))
     # For timer
     frame_delta = None
     last_tick = int(round(time.time() * 1000))

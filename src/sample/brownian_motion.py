@@ -15,10 +15,11 @@ import random
 import math
 
 class Player():
-    def __init__(self):
+    def __init__(self, id, arg = None):
+        self.id = id
         pass
 
-    def strategy(self, id, allcells):
+    def strategy(self, allcells):
         # Random angle
         theta = 2 * math.pi * random.random()
         return theta if random.random() > 0.8 else None

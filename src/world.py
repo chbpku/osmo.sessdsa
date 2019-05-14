@@ -16,11 +16,8 @@ import math
 from consts import Consts
 from cell import Cell
 
-from sample.brownian_motion import Player as Player0
-from sample.cxk import Player as Player1
-
 class World():
-    def __init__(self):
+    def __init__(self, player0, player1):
         # Variables and setup
         self.cells = [] # Array of cells
         self.cells_count = 0
@@ -28,8 +25,8 @@ class World():
         self.result = None
         # Init
         self.new_game()
-        self.player0 = Player0()
-        self.player1 = Player1()
+        self.player0 = player0
+        self.player1 = player1
 
     # Methods
     def new_game(self):
@@ -132,11 +129,10 @@ class World():
             if collision != []:
                 self.absorb(collision)
         # Eject!
-        allcells = self.cells.copy()
-        allcells = [cell for cell in allcells if cell.dead == False]
+        allcells = [cell for cell in self.cells if cell.dead == False]
         self.cells_count = len(allcells)
-        theta0 = self.player0.strategy(0, allcells)
-        theta1 = self.player1.strategy(1, allcells)
+        theta0 = self.player0.strategy(allcells.copy())
+        theta1 = self.player1.strategy(allcells.copy())
         if theta0:
             self.eject(self.cells[0], theta0)
         if theta1:

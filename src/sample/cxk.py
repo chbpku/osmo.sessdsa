@@ -14,40 +14,48 @@ from consts import Consts
 import random
 import math
 
+from pygame import mixer 
+
+mixer.init()
+mixer.music.load("sample/jntm.mp3")
+
 class Player():
-    def __init__(self):
+    def __init__(self, id, arg = None):
+        self.id = id
         pass
 
     def sing(self):
         print("MUSIC!!!")
+        if random.random() < 0.1:
+            mixer.music.play()
         return None
 
-    def jump(self, id, allcells):
+    def jump(self, allcells):
         # Only move to the smallest cell
         min_cell = sorted(allcells, key = lambda cell: cell.radius)[0]
-        dx = allcells[id].pos[0] - min_cell.pos[0]
-        dy = allcells[id].pos[1] - min_cell.pos[1]
+        dx = allcells[self.id].pos[0] - min_cell.pos[0]
+        dy = allcells[self.id].pos[1] - min_cell.pos[1]
         # This can be adjusted, only uses the dx and dy
         return math.atan2(dx, dy)
 
-    def rap(self, id, allcells):
+    def rap(self, allcells):
         # Only avoid the largest cell
         max_cell = sorted(allcells, key = lambda cell: cell.radius)[-1]
-        dx = max_cell.pos[0] - allcells[id].pos[0]
-        dy = max_cell.pos[1] - allcells[id].pos[1]
+        dx = max_cell.pos[0] - allcells[self.id].pos[0]
+        dy = max_cell.pos[1] - allcells[self.id].pos[1]
         # This can be adjusted, only uses the dx and dy
         return math.atan2(dx, dy)
 
-    def play_basketball(self):
+    def basketball(self):
         return 2 * math.pi * random.random()
 
-    def strategy(self, id, allcells):
+    def strategy(self, allcells):
         rng = random.randint(0, 3)
         if rng == 0:
             return self.sing()
         elif rng == 1:
-            return self.jump(id, allcells)
+            return self.jump(allcells)
         elif rng == 2:
-            return self.rap(id, allcells)
+            return self.rap(allcells)
         else:
-            return self.play_basketball()
+            return self.basketball()
