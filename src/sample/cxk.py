@@ -18,10 +18,36 @@ class Player():
     def __init__(self):
         pass
 
-    def strategy(self, id, allcells):
-        # Only move to the smallers
+    def sing(self):
+        print("MUSIC!!!")
+        return None
+
+    def jump(self, id, allcells):
+        # Only move to the smallest cell
         min_cell = sorted(allcells, key = lambda cell: cell.radius)[0]
-        dx = abs(allcells[id].pos[0] - min_cell.pos[0])
-        dy = abs(allcells[id].pos[1] - min_cell.pos[1])
-        return math.atan(dx / dy) if dy != 0 else None
+        dx = allcells[id].pos[0] - min_cell.pos[0]
+        dy = allcells[id].pos[1] - min_cell.pos[1]
         # This can be adjusted, only uses the dx and dy
+        return math.atan2(dx, dy)
+
+    def rap(self, id, allcells):
+        # Only avoid the largest cell
+        max_cell = sorted(allcells, key = lambda cell: cell.radius)[-1]
+        dx = max_cell.pos[0] - allcells[id].pos[0]
+        dy = max_cell.pos[1] - allcells[id].pos[1]
+        # This can be adjusted, only uses the dx and dy
+        return math.atan2(dx, dy)
+
+    def play_basketball(self):
+        return 2 * math.pi * random.random()
+
+    def strategy(self, id, allcells):
+        rng = random.randint(0, 3)
+        if rng == 0:
+            return self.sing()
+        elif rng == 1:
+            return self.jump(id, allcells)
+        elif rng == 2:
+            return self.rap(id, allcells)
+        else:
+            return self.play_basketball()

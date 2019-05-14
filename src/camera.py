@@ -19,7 +19,9 @@ from world import World
 class Camera():
     def __init__(self):
         pass
+
     def zoom_to_cell(self, cell):
         pass
+
     def zoom_to_point(self, pos):
         pass
