@@ -33,8 +33,8 @@ class World():
         self.cells = []
         self.frame_count = 0
         # Define the players first
-        self.cells.append(Cell([Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
-        self.cells.append(Cell([Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
+        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
+        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
         # Generate a bunch of random cells
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
@@ -46,7 +46,7 @@ class World():
             ang = random.random() * 2 * math.pi
             x = Consts["WORLD_X"] * random.random()
             y = Consts["WORLD_Y"] * random.random()
-            cell = Cell([x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
+            cell = Cell(i + 2, [x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
             self.cells.append(cell)
 
     def save_game(self):
@@ -56,11 +56,11 @@ class World():
         self.result = {
             "winner": 1 - loser
         }
-        print("Winner, Winner, Chiken Dinner")
+        print("Winner, Winner, Chicken Dinner")
         print("Player {} dead".format(loser))
 
     def eject(self, player, theta):
-        if player.dead or not theta:
+        if player.dead or theta == None:
             return
         # Reduce force in proportion to area
         fx = math.sin(theta)
@@ -76,7 +76,7 @@ class World():
         player.radius *= (1 - Consts["EJECT_MASS_RATIO"]) ** 0.5
         new_pos_x = player.pos[0] + fx * (player.radius + newrad)
         new_pos_y = player.pos[1] + fy * (player.radius + newrad)
-        new_cell = Cell([new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
+        new_cell = Cell(len(self.cells), [new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
         new_cell.stay_in_bounds()
         new_cell.limit_speed()
         self.cells.append(new_cell)

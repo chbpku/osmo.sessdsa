@@ -16,8 +16,10 @@ import math
 
 from pygame import mixer 
 
+import os
+
 mixer.init()
-mixer.music.load("sample/jntm.mp3")
+mixer.music.load(os.path.join(os.getcwd(), "sample/jntm.mp3"))
 
 class Player():
     def __init__(self, id, arg = None):
@@ -29,7 +31,7 @@ class Player():
             mixer.music.play()
         return None
 
-    def jump(self, allcells):
+    def dance(self, allcells):
         # Only move to the smallest cell
         min_cell = sorted(allcells, key = lambda cell: cell.radius)[0]
         dx = allcells[self.id].pos[0] - min_cell.pos[0]
@@ -53,7 +55,7 @@ class Player():
         if rng == 0:
             return self.sing()
         elif rng == 1:
-            return self.jump(allcells)
+            return self.dance(allcells)
         elif rng == 2:
             return self.rap(allcells)
         else:

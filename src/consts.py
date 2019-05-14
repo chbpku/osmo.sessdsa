@@ -24,15 +24,15 @@ Consts = {
     # CELLS_COUNT
     "CELLS_COUNT": 100,
     # EJECT_MASS_RATIO
-    "EJECT_MASS_RATIO": 0.04,
+    "EJECT_MASS_RATIO": 0.01,
     # FPS
     "FPS": 15,
     # FRAME_DELTA
     "FRAME_DELTA": 3,
     # DELTA_VELOC
-    "DELTA_VELOC": 1,
+    "DELTA_VELOC": 5,
 
-    "NEW_PLAYER_LAG": 60,
+    "MAX_TIME": 1,
     "LEADERBOARD_NUM": 5,
     "PREFIXES": "Angry Baby Crazy Diligent Excited Fat Greedy Hungry Interesting Japanese Kind Little Magic Naïve Old Powerful Quiet Rich Superman THU Undefined Valuable Wifeless Xiangbuchulai Young Zombie",
     "NAMES": "Alice Bob Carol Dave Eve Francis Grace Hans Isabella Jason Kate Louis Margaret Nathan Olivia Paul Queen Richard Susan Thomas Uma Vivian Winnie Xander Yasmine Zach"
