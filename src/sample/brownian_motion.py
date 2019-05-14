@@ -17,7 +17,6 @@ import math
 class Player():
     def __init__(self, id, arg = None):
         self.id = id
-        pass
 
     def strategy(self, allcells):
         # Random angle

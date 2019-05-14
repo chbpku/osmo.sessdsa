@@ -22,7 +22,6 @@ mixer.music.load("sample/jntm.mp3")
 class Player():
     def __init__(self, id, arg = None):
         self.id = id
-        pass
 
     def sing(self):
         print("MUSIC!!!")

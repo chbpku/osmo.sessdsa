@@ -53,11 +53,14 @@ class World():
         pass
 
     def game_over(self, loser):
-        self.result = True
+        self.result = {
+            "winner": 1 - loser
+        }
+        print("Winner, Winner, Chiken Dinner")
         print("Player {} dead".format(loser))
 
     def eject(self, player, theta):
-        if player.dead:
+        if player.dead or not theta:
             return
         # Reduce force in proportion to area
         fx = math.sin(theta)
@@ -131,9 +134,21 @@ class World():
         # Eject!
         allcells = [cell for cell in self.cells if cell.dead == False]
         self.cells_count = len(allcells)
-        theta0 = self.player0.strategy(allcells.copy())
-        theta1 = self.player1.strategy(allcells.copy())
-        if theta0:
+
+        try:
+            theta0 = self.player0.strategy(allcells.copy())
+        except:
+            self.game_over(0)
+        try:
+            theta1 = self.player1.strategy(allcells.copy())
+        except:
+            self.game_over(1)
+
+        if isinstance(theta0, (int, float, type(None))):
             self.eject(self.cells[0], theta0)
-        if theta1:
+        else:
+            self.game_over(0)
+        if isinstance(theta1, (int, float, type(None))):
             self.eject(self.cells[1], theta1)
+        else:
+            self.game_over(1)
