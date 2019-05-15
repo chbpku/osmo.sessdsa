@@ -13,10 +13,11 @@
 import sqlite3
 import time
 
-class Database(object):
+class Database():
     def __init__(self, arg = None):
         self.connect = sqlite3.connect("data/" + str(round(time.time() * 1000)) + ".db")
         self.cursor = self.connect.cursor()
+
     def save_frame(self, frame_count, allcells):
         self.cursor.execute("""CREATE TABLE FRAME_{}
         (
@@ -29,7 +30,11 @@ class Database(object):
         );""".format(frame_count))
         for cell in allcells:
             if not cell.dead:
-                self.cursor.execute("INSERT INTO FRAME_{} (X, Y, VX, VY, R) VALUES (?, ?, ?, ?, ?);".format(frame_count), [cell.pos[0], cell.pos[1], cell.veloc[0], cell.veloc[1], cell.radius])
+                self.cursor.execute(
+                    "INSERT INTO FRAME_{} (X, Y, VX, VY, R) VALUES (?, ?, ?, ?, ?);".format(frame_count),
+                    [cell.pos[0], cell.pos[1], cell.veloc[0], cell.veloc[1], cell.radius]
+                )
         self.connect.commit()
+
     def save_game(self):
         self.connect.close()
