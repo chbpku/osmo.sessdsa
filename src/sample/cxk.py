@@ -11,24 +11,25 @@
 #  GNU General Public License for more details.
 
 from consts import Consts
+from settings import Settings
 import random
 import math
 
-from pygame import mixer 
-
 import os
-
-mixer.init()
-mixer.music.load(os.path.join(os.getcwd(), "sample/jntm.mp3"))
 
 class Player():
     def __init__(self, id, arg = None):
         self.id = id
+        if Settings["ENABLE_JNTM"]:
+            from pygame import mixer
+            self.mixer = mixer
+            self.mixer.init()
+            self.mixer.music.load(os.path.join(os.getcwd(), "sample/jntm.mp3"))
 
     def sing(self):
         print("MUSIC!!!")
-        if random.random() < 0.1:
-            mixer.music.play()
+        if Settings["ENABLE_JNTM"] and random.random() < 0.1:
+            self.mixer.music.play()
         return None
 
     def dance(self, allcells):

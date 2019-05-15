@@ -16,17 +16,23 @@ import math
 import time
 
 from consts import Consts
+from settings import Settings
 from world import World
 
 from sample.brownian_motion import Player as Player0
 from sample.cxk import Player as Player1
+
+from database import Database
 
 class Application(tk.Frame):
     def __init__(self, master = None):
         super().__init__(master)
         self.master = master
         self.master.title("Osmo")
-        self.world = World(Player0(0), Player1(1))
+        if Settings["ENABLE_DATABASE"]:
+            self.world = World(Player0(0), Player1(1), Database())
+        else:
+            self.world = World(Player0(0), Player1(1))
         self.paused = False
         # For timer
         self.frame_delta = None
@@ -94,7 +100,7 @@ class Application(tk.Frame):
         for cell in self.world.cells:
             if cell.dead:
                 continue
-            color = "green" if cell.isplayer else "cyan"
+            color = "green" if cell.id <= 1 else "cyan"
             coords = [
                 cell.pos[0] - cell.radius,
                 cell.pos[1] - cell.radius,

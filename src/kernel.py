@@ -13,13 +13,19 @@
 import time
 
 from consts import Consts
+from settings import Settings
 from world import World
 
 from sample.brownian_motion import Player as Player0
 from sample.cxk import Player as Player1
 
+from database import Database
+
 if __name__ == "__main__":
-    world = World(Player0(0), Player1(1))
+    if Settings["ENABLE_DATABASE"]:
+        world = World(Player0(0), Player1(1), Database())
+    else:
+        world = World(Player0(0), Player1(1))
     # For timer
     frame_delta = None
     last_tick = int(round(time.time() * 1000))

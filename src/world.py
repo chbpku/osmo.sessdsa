@@ -17,7 +17,7 @@ from consts import Consts
 from cell import Cell
 
 class World():
-    def __init__(self, player0, player1):
+    def __init__(self, player0, player1, database = None):
         # Variables and setup
         self.cells = [] # Array of cells
         self.cells_count = 0
@@ -27,14 +27,15 @@ class World():
         self.new_game()
         self.player0 = player0
         self.player1 = player1
+        self.database = database
 
     # Methods
     def new_game(self):
         self.cells = []
         self.frame_count = 0
         # Define the players first
-        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
-        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30, isplayer = True))
+        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30))
+        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30))
         # Generate a bunch of random cells
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
@@ -49,15 +50,14 @@ class World():
             cell = Cell(i + 2, [x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
             self.cells.append(cell)
 
-    def save_game(self):
-        pass
-
     def game_over(self, loser):
         self.result = {
             "winner": 1 - loser
         }
         print("Winner, Winner, Chicken Dinner")
         print("Player {} dead".format(loser))
+        if self.database:
+            self.database.save_game()
 
     def eject(self, player, theta):
         if player.dead or theta == None:
@@ -95,12 +95,13 @@ class World():
         for ele in collision:
             self.cells[ele].dead = True
             # If we just killed the player, Game over
-            if self.cells[ele].isplayer:
+            if self.cells[ele].id <= 1:
                 self.game_over(ele)
 
     def update(self, frame_delta):
         # Save
-        self.save_game()
+        if self.database:
+            self.database.save_frame(self.frame_count, self.cells)
         # New frame
         self.frame_count += 1
         for cell in self.cells:

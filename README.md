@@ -10,6 +10,20 @@
 
 目前已有用JavaScript实现的单机游戏版本，接下来需要将其移植为Python版本，并实现人机对战和AI对战。
 
+## 安装
+
+通过`git clone`或DOWNLOAD ZIP下载后，在本`README.md`文件所在的目录执行
+
+```bash
+pip install -r requirements.txt
+```
+
+或
+
+```bash
+pip3 install -r requirements.txt
+```
+
 ## 常数
 
 坐标原点为左上角。x轴向右，y轴向下。所有坐标、速度均用`list`表示，先x后y。
@@ -42,10 +56,10 @@
 
 | 属性名称 | 描述 |
 | - | - |
+| `id` | 玩家ID（Int） |
 | `pos` | x、y坐标（List） |
 | `veloc` | x、y方向速度（List） |
 | `radius` | 半径（Float） |
-| `isplayer` | 标记是否为玩家控制（Bool） |
 | `collide_group` | 在处理碰撞时，相接触的两个或更多球具有相同的`collide_group`（Int） |
 | `dead` | 标记死亡状态（Bool） |
 
@@ -64,11 +78,13 @@
 | - | - |
 | `cells` | 所有球构成的数组（List） |
 | `result` | 游戏状态/结果（Bool） |
+| `cells_count` | 存活星体数 |
+| `frame_count` | 当前帧数 |
+| `database` | 保存游戏的数据库 |
 
 | 方法名称 | 描述 | 输入 | 输出 |
 | - | - | - | - |
 | `new_game` | 创建新游戏 | 无 | 无 |
-| `save_game` | 保存游戏 | 无 | 无 |
 | `game_over` | 游戏结束 | 失败方的ID（Int） | 无 |
 | `eject` | 计算弹射结果 | 球（Cell）和角度（Float） | 无 |
 | `absorb` | 计算碰撞吸收 | `collide_group`（Int） | 无 |
@@ -76,7 +92,7 @@
 
 ### Player
 
-Player接受当前状态（即`world.cells`），返回弹射角度（单位为弧度），或者`None`（不弹射）。
+Player的`strategy`方法接受当前状态（即`world.cells`中所有存活星体组成的`list`的复制），返回弹射角度（单位为弧度），或者`None`（不弹射）。
 
 ## 内核
 
@@ -115,6 +131,13 @@ Player接受当前状态（即`world.cells`），返回弹射角度（单位为�
 ---
 
 【以此类推】
+
+## TODO
+
+- [ ] 实现任意摄像机视角
+- [ ] 实现JavaScript对局回放
+- [ ] 实现基于RTMP或HTTP-FLV（WebSocket）的直播推流
+- [ ] 压缩数据库体积
 
 ## 已知Bug
 

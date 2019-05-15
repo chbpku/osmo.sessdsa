@@ -17,8 +17,8 @@ from consts import Consts
 # Super-class of Cell and Player
 # Handles physical attributes and actions
 class Cell():
-    def __init__(self, id = None, pos = [0, 0], veloc = [0, 0], radius = Consts["DEFAULT_RADIUS"], isplayer = False):
-        # ID
+    def __init__(self, id = None, pos = [0, 0], veloc = [0, 0], radius = Consts["DEFAULT_RADIUS"]):
+        # ID to judge Player or free particle
         self.id = id
         # Variables to hold current position
         self.pos = pos
@@ -26,8 +26,6 @@ class Cell():
         self.veloc = veloc
         # Variables to hold size
         self.radius = radius
-        # Player or free particle
-        self.isplayer = isplayer
 
         # Properties
         self.collide_group = None
