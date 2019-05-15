@@ -133,9 +133,10 @@ class World():
             if collision != []:
                 self.absorb(collision)
         # Eject!
-        allcells = [cell for cell in self.cells if cell.dead == False]
+        allcells = [cell for cell in self.cells if not cell.dead]
         self.cells_count = len(allcells)
 
+        theta0 = theta1 = None
         try:
             theta0 = self.player0.strategy(allcells.copy())
         except:
