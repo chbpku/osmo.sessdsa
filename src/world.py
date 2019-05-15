@@ -31,13 +31,14 @@ from cell import Cell
 import copy
 
 class World():
-    def __init__(self, player0, player1):
+    def __init__(self, player0, player1, names=None):
         # Variables and setup
         self.cells_count = 0
         # Init
         self.new_game()
         self.player0 = player0
         self.player1 = player1
+        self.names = names
 
     # Methods
     def new_game(self):
@@ -64,6 +65,7 @@ class World():
 
     def game_over(self, loser):
         self.result = {
+            "players": self.names,
             "winner": 1 - loser,
             "data": self.database,
             "saved": False
