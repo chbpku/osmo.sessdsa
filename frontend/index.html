@@ -20,6 +20,29 @@
 <input id="uploadfile" type="file" accept="*/*"/>
 <input id="uploadbutton" type="button" onclick="upload()" value="上传">
 <script>
+var camera = {
+	size: [0, 0],
+	center: [500, 250],
+	scale: 0.6,
+	adjusted: true,
+	rect: function(ctx, X1, Y1, dX, dY) {
+		ctx.rect(this.scale * (X1 - this.center[0]) + this.size[0] / 2, this.scale * (Y1 - this.center[1]) + this.size[1] / 2, this.scale * dX, this.scale * dY);
+	},
+	arc: function(ctx, X, Y, R) {
+		min_x = Math.ceil((-this.scale * R - (this.scale * (X - this.center[0]) + this.size[0] / 2)) / (1000 * this.scale));
+		max_x = Math.floor((this.size[0] + this.scale * R - (this.scale * (X - this.center[0]) + this.size[0] / 2)) / (1000 * this.scale));
+		min_y = Math.ceil((-this.scale * R - (this.scale * (Y - this.center[1]) + this.size[1] / 2)) / (500 * this.scale));
+		max_y = Math.floor((this.size[1] + this.scale * R - (this.scale * (Y - this.center[1]) + this.size[1] / 2)) / (500 * this.scale));
+		for (var i = min_x; i <= max_x; i++) {
+			for (var j = min_y; j <= max_y; j++) {
+				ctx.beginPath();
+				ctx.arc(this.scale * (X - this.center[0]) + this.size[0] / 2 + i * 1000 * this.scale, this.scale * (Y - this.center[1]) + this.size[1] / 2 + j * 500 * this.scale, this.scale * R, 0, Math.PI * 2, true);
+				ctx.closePath();
+				ctx.fill();
+			}
+		}
+	}
+}
 // 上传
 function upload() {
 	var file = $("#uploadfile").prop("files")[0];
@@ -45,7 +68,10 @@ function parse_db(index) {
 		result = db.exec("SELECT * FROM FRAME_" + index);
 	}
 	catch(e) {
-		console.error(e);
+		console.log(e);
+		setTimeout(function() {
+			parse_db(0);
+		}, 1000 / 30);
 	}
 	var end = new Date().getTime();
 	console.info("查询数据耗时：" + (end - start) + "ms");
@@ -60,8 +86,11 @@ function parse_db(index) {
 }
 
 function draw(frame) {
-	canvas.height = window.innerHeight;
-	canvas.width = window.innerWidth;
+	camera.size[0] = canvas.width = window.innerWidth;
+	camera.size[1] = canvas.height = window.innerHeight;
+	if (!camera.adjusted) {
+		camera.scale = Math.min(camera.size[0] / 1000, camera.size[1] / 500);
+	}
 	var ctx = canvas.getContext("2d");
 	var shadows = true;
 	// Background
@@ -74,21 +103,21 @@ function draw(frame) {
 	// Level boundary
 	ctx.fillStyle = "#2450E4"; // Background color of the level (inside the boundaries)
 	ctx.beginPath();
-	ctx.rect(0, 0, canvas.width, canvas.height);
+	camera.rect(ctx, 0, 0, 1000, 500);
 	ctx.closePath();
 	ctx.fill();
 	if (shadows) {
 		ctx.strokeStyle = "rgba(0,0,0,0.3)";
 		ctx.lineWidth = 2;
 		ctx.beginPath();
-		ctx.rect(0, 0, canvas.width, canvas.height);
+		camera.rect(ctx, 0, 0, 1000, 500);
 		ctx.closePath();
 		ctx.stroke();
 	}
 	ctx.strokeStyle = "#FFF";
 	ctx.lineWidth = 2;
 	ctx.beginPath();
-	ctx.rect(0, 0, canvas.width, canvas.height);
+	camera.rect(ctx, 0, 0, 1000, 500);
 	ctx.closePath();
 	ctx.stroke();
 	for (var cell of frame[0].values) {
@@ -100,10 +129,7 @@ function draw_cell(ctx, shadow, ID, X, Y, R) {
 	// Shadow
 	if (shadow) {
 		ctx.fillStyle = "rgba(0,0,0,0.3)"; // gray
-		ctx.beginPath();
-		ctx.arc(X + 1, Y + 3, R, 0, Math.PI * 2, true);
-		ctx.closePath();
-		ctx.fill();
+		camera.arc(ctx, X + 1, Y + 3, R, 0);
 	}
 	if (ID <= 1) {
 		ctx.fillStyle = "green";
@@ -112,10 +138,7 @@ function draw_cell(ctx, shadow, ID, X, Y, R) {
 		ctx.fillStyle = "rgb(255,68,26)"; // red
 		ctx.fillStyle = "rgb(54,182,255)"; // blue
 	}
-	ctx.beginPath();
-	ctx.arc(X, Y, R, 0, Math.PI * 2, true);
-	ctx.closePath();
-	ctx.fill();
+	camera.arc(ctx, X, Y, R, 0);
 }
 </script>
 </body>
