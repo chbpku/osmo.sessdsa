@@ -31,6 +31,15 @@ class Database():
         self.cursor = self.connect.cursor()
 
     def save_frame(self, frame_count, allcells):
+        """Save the state of the cells in a frame.
+
+        Args:
+            frame_count: the index of current frame.
+            allcells: list of all cells.
+        Returns:
+            
+
+        """
         self.cursor.execute("""CREATE TABLE FRAME_{}
         (
             ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -49,6 +58,14 @@ class Database():
         self.connect.commit()
 
     def save_game(self, data):
+        """Save the state of the cells in the game.
+
+        Args:
+            data: data.
+        Returns:
+            
+
+        """
         for i in range(len(data)):
             self.save_frame(i, data[i])
         self.connect.close()

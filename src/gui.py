@@ -55,13 +55,37 @@ class Application(tk.Frame):
         self.master.after(int(1000 / Consts["FPS"]), self.refresh_screen)
 
     def play(self):
+        """Control the pause and start of the game.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.paused = not self.paused
         self.widget["play"]["text"] = "PLAY" if self.paused else "PAUSE"
 
     def reset(self):
+        """Reset the world.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.world.new_game()
 
     def create_widgets(self):
+        """Create widgets.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.widget = {}
         self.widget["play"] = tk.Button(self, text = "PAUSE", command = self.play)
         self.widget["play"].pack(side = "left")
@@ -75,23 +99,63 @@ class Application(tk.Frame):
         self.widget["frame_count"].pack(side = "left")
 
     def create_canvas(self):
+        """Create canvas.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.canvas = tk.Canvas(self.master, bg = "blue", width = Consts["WORLD_X"], height = Consts["WORLD_Y"])
         self.canvas.pack()
 
     def create_event_listener(self):
+        """Create event listeners.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.canvas.bind("<Button-1>", self.on_click)
         if system() != "Darwin":
             self.canvas.bind("<MouseWheel>", self.on_mousewheel)
 
     def on_click(self, event):
+        """Handle click events.
+
+        Args:
+            event: click event.
+        Returns:
+            
+
+        """
         cell = self.world.cells[0]
         theta = math.atan2(event.x - cell.pos[0], event.y - cell.pos[1])
         self.world.eject(cell, theta)
 
     def on_mousewheel(self, event):
+        """Handle mouse scroll events.
+
+        Args:
+            event: mouse scroll event.
+        Returns:
+            
+
+        """
         print(event.delta)
 
     def refresh_screen(self):
+        """Refresh screen.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         # Advance timer
         current_tick = int(round(time.time() * 1000))
         self.frame_delta = (current_tick - self.last_tick) * Consts["FPS"] / 1000

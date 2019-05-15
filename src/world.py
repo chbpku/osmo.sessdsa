@@ -42,6 +42,14 @@ class World():
 
     # Methods
     def new_game(self):
+        """Create a new game.
+
+        Args:
+            
+        Returns:
+            
+
+        """
         self.cells = [] # Array of cells
         self.frame_count = 0
         self.database = []
@@ -63,31 +71,49 @@ class World():
             cell = Cell(i + 2, [x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
             self.cells.append(cell)
 
-    def game_over(self, loser):
+    def game_over(self, winner):
+        """Game over.
+
+        Args:
+            winner: id of the winner.
+        Returns:
+            
+
+        """
         self.result = {
             "players": self.names,
-            "winner": 1 - loser,
+            "winner": winner,
             "data": self.database,
             "saved": False
         }
         print("Winner Winner Chicken Dinner!")
-        print("Player {} dead".format(loser))
+        print("Player {} dead".format(1 - winner))
 
     def eject(self, player, theta):
+        """Create a new cell after the ejection process.
+
+        Args:
+            player: the player.
+            theta: angle.
+        Returns:
+            
+
+        """
         if player.dead or theta == None:
             return
         # Reduce force in proportion to area
         fx = math.sin(theta)
         fy = math.cos(theta)
-        # Push player
         new_veloc_x = player.veloc[0] + Consts["DELTA_VELOC"] * fx * (1 - Consts["EJECT_MASS_RATIO"])
         new_veloc_y = player.veloc[1] + Consts["DELTA_VELOC"] * fy * (1 - Consts["EJECT_MASS_RATIO"])
+        # Push player
         player.veloc[0] -= Consts["DELTA_VELOC"] * fx * Consts["EJECT_MASS_RATIO"]
         player.veloc[1] -= Consts["DELTA_VELOC"] * fy * Consts["EJECT_MASS_RATIO"]
         # Shoot off the expended mass in opposite direction
         newrad = player.radius * Consts["EJECT_MASS_RATIO"] ** 0.5
         # Lose some mass (shall we say, Consts["EJECT_MASS_RATIO"]?)
         player.radius *= (1 - Consts["EJECT_MASS_RATIO"]) ** 0.5
+        # Create new cell
         new_pos_x = player.pos[0] + fx * (player.radius + newrad)
         new_pos_y = player.pos[1] + fy * (player.radius + newrad)
         new_cell = Cell(len(self.cells), [new_pos_x, new_pos_y], [new_veloc_x, new_veloc_y], newrad)
@@ -96,6 +122,14 @@ class World():
         self.cells.append(new_cell)
 
     def absorb(self, collision):
+        """Performing the absorption process.
+
+        Args:
+            collision: all the cells that collided.
+        Returns:
+            
+
+        """
         # Calculate total momentum and mass
         mass = sum(self.cells[ele].area() for ele in collision)
         px = sum(self.cells[ele].area() * self.cells[ele].veloc[0] for ele in collision)
@@ -110,9 +144,17 @@ class World():
             self.cells[ele].dead = True
             # If we just killed the player, Game over
             if self.cells[ele].id <= 1:
-                self.game_over(ele)
+                self.game_over(1 - ele)
 
     def update(self, frame_delta):
+        """Create new frames.
+
+        Args:
+            frame_delta: Time interval between two frames.
+        Returns:
+            
+
+        """
         allcells = [cell for cell in self.cells if not cell.dead]
         print(len(allcells))
         # Save
@@ -155,17 +197,17 @@ class World():
         try:
             theta0 = self.player0.strategy(copy.deepcopy(allcells))
         except:
-            self.game_over(0)
+            self.game_over(1)
         try:
             theta1 = self.player1.strategy(copy.deepcopy(allcells))
         except:
-            self.game_over(1)
+            self.game_over(0)
 
         if isinstance(theta0, (int, float, type(None))):
             self.eject(self.cells[0], theta0)
         else:
-            self.game_over(0)
+            self.game_over(1)
         if isinstance(theta1, (int, float, type(None))):
             self.eject(self.cells[1], theta1)
         else:
-            self.game_over(1)
+            self.game_over(0)
