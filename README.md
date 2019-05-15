@@ -34,15 +34,35 @@ pip3 install -r requirements.txt
 
 ## 文件
 
+### `src`目录
+
 | 文件 | 描述 |
 | - | - |
 | `camera.py` | 控制摄像机视角 |
 | `cell.py` | 星体基本单元 |
 | `consts.py` | 定义常数 |
+| `database.py` | 定义数据库 |
 | `gui.py` | 图形界面（用于人机对战和复盘） |
 | `kernel.py` | 内核（用于AI对战） |
 | `player.py` | 用于编写AI函数 |
+| `settings.py` | 用于存储自定义设置 |
 | `world.py` | 游戏的世界 |
+
+### `frontend`目录
+
+在此目录下执行
+
+```bash
+python -m http.server
+```
+
+或
+
+```bash
+python3 -m http.server
+```
+
+然后使用浏览器（请勿使用IE等不支持较新HTML标准的浏览器）打开`http://localhost:8000`即可。
 
 ## 数据结构
 

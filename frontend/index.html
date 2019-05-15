@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="UTF-8">
+<title>OSMO Replay</title>
+<script src="https://cdn.jsdelivr.net/npm/sql.js/js/sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<style>
+#canvas {
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	z-index: -1;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<input id="uploadfile" type="file" accept="*/*"/>
+<input id="uploadbutton" type="button" onclick="upload()" value="上传">
+<script>
+// 上传
+function upload() {
+	var file = $("#uploadfile").prop("files")[0];
+	if (!file) {
+		alert("请先选择数据库，再点击上传！");
+		return;
+	}
+	var reader = new FileReader();
+	reader.onload = function() {
+		var Uints = new Uint8Array(reader.result);
+		window.db = new SQL.Database(Uints);
+		parse_db(0);
+	}
+	reader.readAsArrayBuffer(file);
+	//var src = URL.createObjectURL(file);
+}
+// 读取数据库数据
+function parse_db(index) {
+	// 执行查询
+	var start = new Date().getTime();
+	var result = null;
+	try {
+		result = db.exec("SELECT * FROM FRAME_" + index);
+	}
+	catch(e) {
+		console.error(e);
+	}
+	var end = new Date().getTime();
+	console.info("查询数据耗时：" + (end - start) + "ms");
+	// 解析数据
+	//console.log(result);
+	if (!result) return;
+	draw(result);
+	//console.info(obj);
+	setTimeout(function() {
+		parse_db(index + 1);
+	}, 1000 / 30);
+}
+
+function draw(frame) {
+	canvas.height = window.innerHeight;
+	canvas.width = window.innerWidth;
+	var ctx = canvas.getContext("2d");
+	var shadows = true;
+	// Background
+	ctx.fillStyle = "#1D40B5"; // Surrounding color of canvas outside of the level
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.beginPath();
+	ctx.rect(0, 0, canvas.width, canvas.height);
+	ctx.closePath();
+	ctx.fill();
+	// Level boundary
+	ctx.fillStyle = "#2450E4"; // Background color of the level (inside the boundaries)
+	ctx.beginPath();
+	ctx.rect(0, 0, canvas.width, canvas.height);
+	ctx.closePath();
+	ctx.fill();
+	if (shadows) {
+		ctx.strokeStyle = "rgba(0,0,0,0.3)";
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.rect(0, 0, canvas.width, canvas.height);
+		ctx.closePath();
+		ctx.stroke();
+	}
+	ctx.strokeStyle = "#FFF";
+	ctx.lineWidth = 2;
+	ctx.beginPath();
+	ctx.rect(0, 0, canvas.width, canvas.height);
+	ctx.closePath();
+	ctx.stroke();
+	for (var cell of frame[0].values) {
+		draw_cell(ctx, shadows, cell[0], cell[1], cell[2], cell[5]);
+	}
+}
+
+function draw_cell(ctx, shadow, ID, X, Y, R) {
+	// Shadow
+	if (shadow) {
+		ctx.fillStyle = "rgba(0,0,0,0.3)"; // gray
+		ctx.beginPath();
+		ctx.arc(X + 1, Y + 3, R, 0, Math.PI * 2, true);
+		ctx.closePath();
+		ctx.fill();
+	}
+	if (ID <= 1) {
+		ctx.fillStyle = "green";
+	}
+	else {
+		ctx.fillStyle = "rgb(255,68,26)"; // red
+		ctx.fillStyle = "rgb(54,182,255)"; // blue
+	}
+	ctx.beginPath();
+	ctx.arc(X, Y, R, 0, Math.PI * 2, true);
+	ctx.closePath();
+	ctx.fill();
+}
+</script>
+</body>
+</html>
