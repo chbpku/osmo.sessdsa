@@ -34,10 +34,7 @@ from sample.cxk import Player as Player1
 from database import Database
 
 if __name__ == "__main__":
-    if Settings["ENABLE_DATABASE"]:
-        world = World(Player0(0), Player1(1), Database())
-    else:
-        world = World(Player0(0), Player1(1))
+    world = World(Player0(0), Player1(1))
     # For timer
     frame_delta = None
     last_tick = int(round(time.time() * 1000))
@@ -48,3 +45,8 @@ if __name__ == "__main__":
         frame_delta = (current_tick - last_tick) * Consts["FPS"] / 1000
         last_tick = current_tick
         world.update(Consts["FRAME_DELTA"])
+    else:
+        if Settings["ENABLE_DATABASE"] and not world.result["saved"]:
+            database = Database()
+            database.save_game(world.result["data"])
+            world.result["saved"] = True

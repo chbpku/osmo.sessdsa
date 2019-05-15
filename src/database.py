@@ -48,5 +48,7 @@ class Database():
                 )
         self.connect.commit()
 
-    def save_game(self):
+    def save_game(self, data):
+        for i in range(len(data)):
+            self.save_frame(i, data[i])
         self.connect.close()

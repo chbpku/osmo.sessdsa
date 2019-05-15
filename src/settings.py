@@ -27,5 +27,5 @@ Settings = {
     # pygame required
     "ENABLE_JNTM": False,
     # sqlite3 required
-    "ENABLE_DATABASE": False
+    "ENABLE_DATABASE": True
 }

@@ -41,10 +41,7 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         self.master.title("Osmo")
-        if Settings["ENABLE_DATABASE"]:
-            self.world = World(Player0(0), Player1(1), Database())
-        else:
-            self.world = World(Player0(0), Player1(1))
+        self.world = World(Player0(0), Player1(1))
         self.paused = False
         # For timer
         self.frame_delta = None
@@ -100,6 +97,12 @@ class Application(tk.Frame):
         self.frame_delta = (current_tick - self.last_tick) * Consts["FPS"] / 1000
         self.last_tick = current_tick
         self.master.after(int(1000 / Consts["FPS"]), self.refresh_screen)
+        if self.world.result:
+            if Settings["ENABLE_DATABASE"] and not self.world.result["saved"]:
+                database = Database()
+                database.save_game(self.world.result["data"])
+                self.world.result["saved"] = True
+            return
         if self.paused:
             return
         # Update Label

@@ -28,23 +28,23 @@ import math
 from consts import Consts
 from cell import Cell
 
+import copy
+
 class World():
-    def __init__(self, player0, player1, database = None):
+    def __init__(self, player0, player1):
         # Variables and setup
-        self.cells = [] # Array of cells
         self.cells_count = 0
-        self.frame_count = 0
-        self.result = None
         # Init
         self.new_game()
         self.player0 = player0
         self.player1 = player1
-        self.database = database
 
     # Methods
     def new_game(self):
-        self.cells = []
+        self.cells = [] # Array of cells
         self.frame_count = 0
+        self.database = []
+        self.result = None
         # Define the players first
         self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30))
         self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30))
@@ -64,12 +64,12 @@ class World():
 
     def game_over(self, loser):
         self.result = {
-            "winner": 1 - loser
+            "winner": 1 - loser,
+            "data": self.database,
+            "saved": False
         }
-        print("Winner, Winner, Chicken Dinner")
+        print("Winner Winner Chicken Dinner!")
         print("Player {} dead".format(loser))
-        if self.database:
-            self.database.save_game()
 
     def eject(self, player, theta):
         if player.dead or theta == None:
@@ -111,9 +111,10 @@ class World():
                 self.game_over(ele)
 
     def update(self, frame_delta):
+        allcells = [cell for cell in self.cells if not cell.dead]
+        print(len(allcells))
         # Save
-        if self.database:
-            self.database.save_frame(self.frame_count, self.cells)
+        self.database.append(copy.deepcopy(self.cells))
         # New frame
         self.frame_count += 1
         for cell in self.cells:
@@ -150,11 +151,11 @@ class World():
 
         theta0 = theta1 = None
         try:
-            theta0 = self.player0.strategy(allcells.copy())
+            theta0 = self.player0.strategy(copy.deepcopy(allcells))
         except:
             self.game_over(0)
         try:
-            theta1 = self.player1.strategy(allcells.copy())
+            theta1 = self.player1.strategy(copy.deepcopy(allcells))
         except:
             self.game_over(1)
 
