@@ -105,7 +105,8 @@ python3 -m http.server
 | 方法名称 | 描述 | 输入 | 输出 |
 | - | - | - | - |
 | `new_game` | 创建新游戏 | 无 | 无 |
-| `game_over` | 游戏结束 | 失败方的ID（Int） | 无 |
+| `check_point` | 游戏检查点 | Flag | 无 |
+| `game_over` | 游戏结束 | 获胜方的ID（Int）和获胜原因 | 无 |
 | `eject` | 计算弹射结果 | 球（Cell）和角度（Float） | 无 |
 | `absorb` | 计算碰撞吸收 | `collide_group`（Int） | 无 |
 | `update` | 计算新一帧 | 时间间隔（Float） | 无 |

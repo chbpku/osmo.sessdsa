@@ -28,6 +28,7 @@ import traceback
 import logging
 
 from copy import deepcopy
+from time import perf_counter as pf
 
 from consts import Consts
 from cell import Cell
@@ -55,6 +56,7 @@ class World():
         self.cells = [] # Array of cells
         self.frame_count = 0
         self.database = []
+        self.timer = [Consts["MAX_TIME"], Consts["MAX_TIME"]]
         self.result = None
         # Define the players first
         self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30))
@@ -73,11 +75,31 @@ class World():
             cell = Cell(i + 2, [x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
             self.cells.append(cell)
 
-    def game_over(self, winner):
+    def check_point(self, flag0, flag1, cause):
+        """Checkpoint to determine if the game is over.
+
+        Args:
+            flag0: mark the status of player0.
+            flag1: mark the status of player1.
+            cause: reason for the end of the game.
+        Returns:
+            
+
+        """
+        if not flag0 and flag1:
+            self.game_over(0, cause)
+        elif flag0 and not flag1:
+            self.game_over(1, cause)
+        elif flag0 and flag1:
+            self.game_over(-1, cause)
+
+
+    def game_over(self, winner, cause):
         """Game over.
 
         Args:
             winner: id of the winner.
+            cause: reason for the end of the game.
         Returns:
             
 
@@ -85,11 +107,16 @@ class World():
         self.result = {
             "players": self.names,
             "winner": winner,
+            "cause": cause,
             "data": self.database,
             "saved": False
         }
         print("Winner Winner Chicken Dinner!")
-        print("Player {} dead".format(1 - winner))
+        if winner != -1:
+            print("Player {} win.".format(winner))
+        else:
+            print("Game end in a draw.")
+        print(cause)
 
     def eject(self, player, theta):
         """Create a new cell after the ejection process.
@@ -144,9 +171,6 @@ class World():
         self.cells[biggest].veloc[1] = py / mass
         for ele in collision:
             self.cells[ele].dead = True
-            # If we just killed the player, Game over
-            if self.cells[ele].id <= 1:
-                self.game_over(1 - ele)
 
     def update(self, frame_delta):
         """Create new frames.
@@ -161,6 +185,8 @@ class World():
         self.database.append(deepcopy(self.cells))
         # New frame
         self.frame_count += 1
+        if self.frame_count == Consts["MAX_FRAME"]:
+            self.check_point(self.cells[0].radius <= self.cells[1].radius, self.cells[0].radius >= self.cells[1].radius, "MAX_FRAME")
         for cell in self.cells:
             if not cell.dead:
                 cell.move(frame_delta)
@@ -189,27 +215,41 @@ class World():
         for collision in collisions:
             if collision != []:
                 self.absorb(collision)
+        # If we just killed the player, Game over
+        self.check_point(self.cells[0].dead, self.cells[1].dead, "PLAYER_DEAD")
         # Eject!
         allcells = [cell for cell in self.cells if not cell.dead]
         self.cells_count = len(allcells)
 
         theta0 = theta1 = None
+        flag0 = flag1 = False
+
         try:
+            ti = pf()
             theta0 = self.player0.strategy(deepcopy(allcells))
+            tf = pf()
         except Exception as e:
             logging.error(traceback.format_exc())
-            self.game_over(1)
+            flag0 = True
+        self.timer[0] -= tf - ti
         try:
+            ti = pf()
             theta1 = self.player1.strategy(deepcopy(allcells))
+            tf = pf()
         except Exception as e:
             logging.error(traceback.format_exc())
-            self.game_over(0)
+            flag1 = True
+        self.timer[0] -= tf - ti
 
         if isinstance(theta0, (int, float, type(None))):
-            self.eject(self.cells[0], theta0)
+            if self.timer[0] >= 0:
+                self.eject(self.cells[0], theta0)
         else:
-            self.game_over(1)
+            flag0 = True
         if isinstance(theta1, (int, float, type(None))):
-            self.eject(self.cells[1], theta1)
+            if self.timer[1] >= 0:
+                self.eject(self.cells[1], theta1)
         else:
-            self.game_over(0)
+            flag1 = True
+
+        self.check_point(flag0, flag1, "RUNTIME_ERROR")
