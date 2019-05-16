@@ -31,8 +31,6 @@ Consts = {
     "WORLD_Y": 500,
     # DEFAULT_RADIUS
     "DEFAULT_RADIUS": 5,
-    # Friction
-    "FRICTION": 1,
     # CELLS_COUNT
     "CELLS_COUNT": 100,
     # EJECT_MASS_RATIO

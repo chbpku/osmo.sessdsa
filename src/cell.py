@@ -132,7 +132,5 @@ class Cell():
         # Adjust the position, according to velocity.
         self.pos[0] += self.veloc[0] * frame_delta
         self.pos[1] += self.veloc[1] * frame_delta
-        # Friction
-        self.veloc *= Consts["FRICTION"]
         self.stay_in_bounds()
         self.limit_speed()
