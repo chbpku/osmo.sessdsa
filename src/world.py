@@ -59,16 +59,16 @@ class World():
         self.timer = [Consts["MAX_TIME"], Consts["MAX_TIME"]]
         self.result = None
         # Define the players first
-        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 30))
-        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 30))
+        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 15))
+        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 15))
         # Generate a bunch of random cells
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
-                rad = 3 + (random.random() * 3) # Small cells
+                rad = 1.5 + (random.random() * 1.5) # Small cells
             elif i < 10:
-                rad = 20 + (random.random() * 8) # Big cells
+                rad = 10 + (random.random() * 4) # Big cells
             else:
-                rad = 4 + (random.random() * 18) # Everything else
+                rad = 2 + (random.random() * 9) # Everything else
             ang = random.random() * 2 * math.pi
             x = Consts["WORLD_X"] * random.random()
             y = Consts["WORLD_Y"] * random.random()
