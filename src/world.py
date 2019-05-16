@@ -226,22 +226,24 @@ class World():
         theta0 = theta1 = None
         flag0 = flag1 = False
 
-        try:
-            ti = pf()
-            theta0 = self.player0.strategy(deepcopy(allcells))
-            tf = pf()
-            self.timer[0] -= tf - ti
-        except Exception as e:
-            logging.error(traceback.format_exc())
-            flag0 = True
-        try:
-            ti = pf()
-            theta1 = self.player1.strategy(deepcopy(allcells))
-            tf = pf()
-            self.timer[1] -= tf - ti
-        except Exception as e:
-            logging.error(traceback.format_exc())
-            flag1 = True
+        if self.timer[0] > 0:
+            try:
+                ti = pf()
+                theta0 = self.player0.strategy(deepcopy(allcells))
+                tf = pf()
+                self.timer[0] -= tf - ti
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                flag0 = e
+        if self.timer[1] > 0:
+            try:
+                ti = pf()
+                theta1 = self.player1.strategy(deepcopy(allcells))
+                tf = pf()
+                self.timer[1] -= tf - ti
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                flag1 = e
 
         if isinstance(theta0, (int, float, type(None))):
             if self.timer[0] >= 0:
