@@ -83,18 +83,18 @@ class World():
             flag1: mark the status of player1.
             cause: reason for the end of the game.
         Returns:
-            
+            whether it's endgame.
 
         """
         if not flag0 and flag1:
-            self.game_over(0, cause)
+            self.game_over(0, cause, (flag0, flag1))
         elif flag0 and not flag1:
-            self.game_over(1, cause)
+            self.game_over(1, cause, (flag0, flag1))
         elif flag0 and flag1:
-            self.game_over(-1, cause)
+            self.game_over(-1, cause, (flag0, flag1))
+        return bool(flag0 or flag1)
 
-
-    def game_over(self, winner, cause):
+    def game_over(self, winner, cause, detail=None):
         """Game over.
 
         Args:
@@ -108,6 +108,7 @@ class World():
             "players": self.names,
             "winner": winner,
             "cause": cause,
+            "detail": detail,
             "data": self.database,
             "saved": False
         }
@@ -216,7 +217,8 @@ class World():
             if collision != []:
                 self.absorb(collision)
         # If we just killed the player, Game over
-        self.check_point(self.cells[0].dead, self.cells[1].dead, "PLAYER_DEAD")
+        if self.check_point(self.cells[0].dead, self.cells[1].dead, "PLAYER_DEAD"):
+            return
         # Eject!
         allcells = [cell for cell in self.cells if not cell.dead]
         self.cells_count = len(allcells)
@@ -228,18 +230,18 @@ class World():
             ti = pf()
             theta0 = self.player0.strategy(deepcopy(allcells))
             tf = pf()
+            self.timer[0] -= tf - ti
         except Exception as e:
             logging.error(traceback.format_exc())
             flag0 = True
-        self.timer[0] -= tf - ti
         try:
             ti = pf()
             theta1 = self.player1.strategy(deepcopy(allcells))
             tf = pf()
+            self.timer[1] -= tf - ti
         except Exception as e:
             logging.error(traceback.format_exc())
             flag1 = True
-        self.timer[0] -= tf - ti
 
         if isinstance(theta0, (int, float, type(None))):
             if self.timer[0] >= 0:
