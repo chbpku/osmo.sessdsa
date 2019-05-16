@@ -32,6 +32,7 @@ import os
 class Player():
     def __init__(self, id, arg = None):
         self.id = id
+        print("MUSIC!!!")
         if Settings["ENABLE_JNTM"]:
             from pygame import mixer
             self.mixer = mixer
@@ -41,7 +42,6 @@ class Player():
             self.mixer = None
 
     def sing(self):
-        print("MUSIC!!!")
         if self.mixer and random.random() < 0.1:
             self.mixer.music.play()
         return None

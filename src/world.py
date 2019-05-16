@@ -24,14 +24,16 @@
 
 import random
 import math
+import traceback
+import logging
+
+from copy import deepcopy
 
 from consts import Consts
 from cell import Cell
 
-import copy
-
 class World():
-    def __init__(self, player0, player1, names=None):
+    def __init__(self, player0, player1, names = None):
         # Variables and setup
         self.cells_count = 0
         # Init
@@ -155,10 +157,8 @@ class World():
             
 
         """
-        allcells = [cell for cell in self.cells if not cell.dead]
-        print(len(allcells))
         # Save
-        self.database.append(copy.deepcopy(self.cells))
+        self.database.append(deepcopy(self.cells))
         # New frame
         self.frame_count += 1
         for cell in self.cells:
@@ -195,12 +195,14 @@ class World():
 
         theta0 = theta1 = None
         try:
-            theta0 = self.player0.strategy(copy.deepcopy(allcells))
-        except:
+            theta0 = self.player0.strategy(deepcopy(allcells))
+        except Exception as e:
+            logging.error(traceback.format_exc())
             self.game_over(1)
         try:
-            theta1 = self.player1.strategy(copy.deepcopy(allcells))
-        except:
+            theta1 = self.player1.strategy(deepcopy(allcells))
+        except Exception as e:
+            logging.error(traceback.format_exc())
             self.game_over(0)
 
         if isinstance(theta0, (int, float, type(None))):
