@@ -59,8 +59,8 @@ class World():
         self.timer = [Consts["MAX_TIME"], Consts["MAX_TIME"]]
         self.result = None
         # Define the players first
-        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], 15))
-        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], 15))
+        self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], Consts["DEFAULT_RADIUS"]))
+        self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], Consts["DEFAULT_RADIUS"]))
         # Generate a bunch of random cells
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
@@ -113,7 +113,7 @@ class World():
         }
         print("Winner Winner Chicken Dinner!")
         if winner != -1:
-            print("Player {} win.".format(winner))
+            print("Winner: Player {}.".format(winner))
         else:
             print("Game ends in a draw.")
         print(cause)
