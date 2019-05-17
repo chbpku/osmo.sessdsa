@@ -185,8 +185,9 @@ class World():
         self.database.append(deepcopy(self.cells))
         # New frame
         self.frame_count += 1
-        if self.frame_count == Consts["MAX_FRAME"]:
+        if self.frame_count == Consts["MAX_FRAME"]: # Time's up
             self.check_point(self.cells[0].radius <= self.cells[1].radius, self.cells[0].radius >= self.cells[1].radius, "MAX_FRAME")
+            return
         for cell in self.cells:
             if not cell.dead:
                 cell.move(frame_delta)
