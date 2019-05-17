@@ -69,7 +69,6 @@ class World():
                 rad = 10 + (random.random() * 4) # Big cells
             else:
                 rad = 2 + (random.random() * 9) # Everything else
-            ang = random.random() * 2 * math.pi
             x = Consts["WORLD_X"] * random.random()
             y = Consts["WORLD_Y"] * random.random()
             cell = Cell(i + 2, [x, y], [(random.random() - 0.5) * 2, (random.random() - 0.5) * 2], rad)
@@ -94,7 +93,7 @@ class World():
             self.game_over(-1, cause, (flag0, flag1))
         return bool(flag0 or flag1)
 
-    def game_over(self, winner, cause, detail=None):
+    def game_over(self, winner, cause, detail = None):
         """Game over.
 
         Args:
@@ -116,7 +115,7 @@ class World():
         if winner != -1:
             print("Player {} win.".format(winner))
         else:
-            print("Game end in a draw.")
+            print("Game ends in a draw.")
         print(cause)
 
     def eject(self, player, theta):
