@@ -12,7 +12,7 @@
 
 ## 安装
 
-通过`git clone`或DOWNLOAD ZIP下载后，在本`README.md`文件所在的目录执行
+通过`git clone`或DOWNLOAD ZIP下载后，在本`README.md`文件所在的目录执行：
 
 ```bash
 pip install -r requirements.txt
@@ -48,6 +48,8 @@ pip3 install -r requirements.txt
 | `settings.py` | 用于存储自定义设置 |
 | `world.py` | 游戏的世界 |
 
+为了高效地保存游戏数据，以便进行复盘，我们使用了`sqlite`。在`settings.py`中设置`ENABLE_DATABASE`为`True`，并运行`gui.py`或`kernel.py`，对战完成后，数据文件会保存在`src/data`目录下。随后，便可以通过在浏览器中上传数据文件进行复盘。具体操作请看后文。
+
 ### `frontend`目录
 
 在此目录下执行
@@ -63,10 +65,6 @@ python3 -m http.server
 ```
 
 然后使用浏览器（请勿使用IE等不支持较新HTML标准的浏览器）打开`http://localhost:8000`即可。
-
-## 数据结构
-
-为了高效地保存游戏数据，是否需要使用sqlite？
 
 ## 类
 
@@ -155,8 +153,8 @@ Player的`strategy`方法接受当前状态（即`world.cells`中所有存活星
 
 ## TODO
 
-- [ ] 实现任意摄像机视角
-- [ ] 实现JavaScript对局回放
+- [x] 实现任意摄像机视角
+- [x] 实现JavaScript对局回放
 - [ ] 实现基于RTMP或HTTP-FLV（WebSocket）的直播推流
 - [ ] 压缩数据库体积
 
