@@ -33,7 +33,7 @@ from consts import Consts
 from cell import Cell
 
 class World():
-    def __init__(self, player0, player1, names = None):
+    def __init__(self, player0, player1, names=None, storages=[{}, {}]):
         # Variables and setup
         self.cells_count = 0
         # Init
@@ -41,6 +41,10 @@ class World():
         self.player0 = player0
         self.player1 = player1
         self.names = names
+        # Bind stat recorders
+        self.recorders = [WorldStat(Consts["MAX_FRAME"]) for i in 'xx']
+        for i in 0, 1:
+            storages[i]['world'] = self.recorders[i]
 
     # Methods
     def new_game(self):
@@ -78,6 +82,8 @@ class World():
                     Consts["WORLD_Y"] * random.random()
                 ]
             self.cells.append(cell)
+        # Update recorders
+        self.update_recorders()
 
     def check_point(self, flag0, flag1, cause):
         """Checkpoint to determine if the game is over.
@@ -193,6 +199,9 @@ class World():
         if self.frame_count == Consts["MAX_FRAME"]: # Time's up
             self.check_point(self.cells[0].radius <= self.cells[1].radius, self.cells[0].radius >= self.cells[1].radius, "MAX_FRAME")
             return
+        # Update recorders
+        self.update_recorders()
+
         for cell in self.cells:
             if not cell.dead:
                 cell.move(frame_delta)
@@ -262,3 +271,20 @@ class World():
             flag1 = True
 
         self.check_point(flag0, flag1, "RUNTIME_ERROR")
+
+    def update_recorders(self):
+        """put values into recorders
+
+        Args:
+        
+        Returns:
+    
+        """
+        for i, rec in enumerate(self.recorders):
+            rec.frame = self.frame_count  # current frame
+            rec.cells_count = len(self.cells)
+
+
+class WorldStat:
+    def __init__(self, frames):
+        self.total_frames = frames
