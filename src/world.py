@@ -27,7 +27,6 @@ import math
 import traceback
 import logging
 
-from copy import deepcopy
 from time import perf_counter as pf
 
 from consts import Consts
@@ -188,7 +187,7 @@ class World():
 
         """
         # Save
-        self.database.append(deepcopy(self.cells))
+        self.database.append([c.copy() for c in self.cells])
         # New frame
         self.frame_count += 1
         if self.frame_count == Consts["MAX_FRAME"]: # Time's up
@@ -235,7 +234,7 @@ class World():
         if self.timer[0] > 0:
             try:
                 ti = pf()
-                theta0 = self.player0.strategy(deepcopy(allcells))
+                theta0 = self.player0.strategy([c.copy() for c in self.cells])
                 tf = pf()
                 self.timer[0] -= tf - ti
             except Exception as e:
@@ -244,7 +243,7 @@ class World():
         if self.timer[1] > 0:
             try:
                 ti = pf()
-                theta1 = self.player1.strategy(deepcopy(allcells))
+                theta1 = self.player1.strategy([c.copy() for c in self.cells])
                 tf = pf()
                 self.timer[1] -= tf - ti
             except Exception as e:
