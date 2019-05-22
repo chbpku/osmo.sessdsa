@@ -33,7 +33,7 @@ from consts import Consts
 from cell import Cell
 
 class World():
-    def __init__(self, player0, player1, names=None, recorders=None):
+    def __init__(self, player0, player1, names = None, recorders = None):
         # Variables and setup
         self.cells_count = 0
         # Bind stat recorders
@@ -271,7 +271,7 @@ class World():
         self.check_point(flag0, flag1, "RUNTIME_ERROR")
 
     def update_recorders(self):
-        """put values into recorders
+        """Put values into recorders.
 
         Args:
         
@@ -281,7 +281,7 @@ class World():
         if not self.recorders:
             return
         for i, rec in enumerate(self.recorders):
-            rec.frame = self.frame_count  # current frame
+            rec.frame = self.frame_count # Current frame
             rec.cells_count = len(self.cells)
 
 

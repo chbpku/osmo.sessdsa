@@ -136,7 +136,7 @@ class Cell():
         self.limit_speed()
 
     def copy(self):
-        """Returns a copy of current cell
+        """Returns a copy of current cell.
 
         Args:
             
