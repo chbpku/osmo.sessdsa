@@ -94,7 +94,8 @@ function parse_db(index) {
 	// 解析数据
 	if (!result) return;
 	draw(result);
-	setTimeout(function() {
+	clearTimeout(window.parse_event)
+	window.parse_event = setTimeout(function() {
 		parse_db(index + 1);
 	}, 1000 / 30);
 }
