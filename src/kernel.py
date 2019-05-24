@@ -26,7 +26,7 @@ import time
 
 from consts import Consts
 from settings import Settings
-from world import World
+from world import World, WorldStat
 
 from sample.brownian_motion import Player as Player0
 from sample.cxk import Player as Player1
@@ -34,19 +34,30 @@ from sample.cxk import Player as Player1
 from database import Database
 
 if __name__ == "__main__":
-    world = World(Player0(0), Player1(1))
-    # For timer
-    frame_delta = None
-    last_tick = int(round(time.time() * 1000))
+    # Storage across rounds
+    storages = [{}, {}]
 
-    while not world.result:
-        # Advance timer
-        current_tick = int(round(time.time() * 1000))
-        frame_delta = (current_tick - last_tick) * Consts["FPS"] / 1000
-        last_tick = current_tick
-        world.update(Consts["FRAME_DELTA"])
-    else:
-        if Settings["ENABLE_DATABASE"] and not world.result["saved"]:
-            database = Database()
-            database.save_game(world.result["data"])
-            world.result["saved"] = True
+    while True:
+        # Recorders
+        recorders = [WorldStat(Consts["MAX_FRAME"]) for i in 'xx']
+        for s, r in zip(storages, recorders):
+            s['world'] = r
+        # World
+        world = World(
+            Player0(0, storages[0]), Player1(1, storages[1]), ['Plr1', 'Plr2'],
+            recorders)
+        # For timer
+        frame_delta = None
+        last_tick = int(round(time.time() * 1000))
+
+        while not world.result:
+            # Advance timer
+            current_tick = int(round(time.time() * 1000))
+            frame_delta = (current_tick - last_tick) * Consts["FPS"] / 1000
+            last_tick = current_tick
+            world.update(Consts["FRAME_DELTA"])
+        else:
+            if Settings["ENABLE_DATABASE"] and not world.result["saved"]:
+                database = Database()
+                database.save_game(world.result["data"])
+                world.result["saved"] = True
