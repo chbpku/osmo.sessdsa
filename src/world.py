@@ -238,37 +238,35 @@ class World():
         theta0 = theta1 = None
         flag0 = flag1 = False
 
-        if self.timer[0] > 0:
-            try:
-                ti = pf()
-                theta0 = self.player0.strategy([c.copy() for c in allcells])
-                tf = pf()
-                self.timer[0] -= tf - ti
-            except Exception as e:
-                logging.error(traceback.format_exc())
-                flag0 = e
-        if self.timer[1] > 0:
-            try:
-                ti = pf()
-                theta1 = self.player1.strategy([c.copy() for c in allcells])
-                tf = pf()
-                self.timer[1] -= tf - ti
-            except Exception as e:
-                logging.error(traceback.format_exc())
-                flag1 = e
+        try:
+            ti = pf()
+            theta0 = self.player0.strategy([c.copy() for c in allcells])
+            tf = pf()
+            self.timer[0] -= tf - ti
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            flag0 = e
 
-        if isinstance(theta0, (int, float, type(None))):
-            if self.timer[0] >= 0:
-                self.eject(self.cells[0], theta0)
-        else:
-            flag0 = True
-        if isinstance(theta1, (int, float, type(None))):
-            if self.timer[1] >= 0:
-                self.eject(self.cells[1], theta1)
-        else:
-            flag1 = True
+        try:
+            ti = pf()
+            theta1 = self.player1.strategy([c.copy() for c in allcells])
+            tf = pf()
+            self.timer[1] -= tf - ti
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            flag1 = e
 
-        self.check_point(flag0, flag1, "RUNTIME_ERROR")
+        if self.check_point(flag0, flag1, "RUNTIME_ERROR"):
+            return
+
+        if self.check_point(not isinstance(theta0, (int, float, type(None))), not isinstance(theta1, (int, float, type(None))), "INVALID_RETURN_VALUE"):
+            return
+
+        if self.check_point(self.timer[0] < 0, self.timer[1] < 0, "TIMEOUT"):
+            return
+
+        self.eject(self.cells[0], theta0)
+        self.eject(self.cells[1], theta1)
 
     def update_recorders(self):
         """Put values into recorders.
