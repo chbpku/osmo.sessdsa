@@ -272,9 +272,11 @@ class World():
         for i, rec in enumerate(self.recorders):
             rec.frame = self.frame_count # Current frame
             rec.cells_count = len(self.cells)
+            rec.timer = self.timer[:]
 
 
 class WorldStat:
     def __init__(self, frames):
         self.total_frames = frames
         self.frame = 0
+        self.timer = [Consts["MAX_TIME"]] * 2
