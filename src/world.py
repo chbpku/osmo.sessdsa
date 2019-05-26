@@ -40,8 +40,7 @@ class World():
         self.recorders = recorders
         # Init
         self.new_game()
-        self.player0 = player0
-        self.player1 = player1
+        self.player = [player0, player1]
         self.names = names
 
     # Methods
@@ -185,7 +184,7 @@ class World():
         """Create new frames.
 
         Args:
-            frame_delta: Time interval between two frames.
+            frame_delta: time interval between two frames.
         Returns:
             
 
@@ -235,38 +234,30 @@ class World():
         allcells = [cell for cell in self.cells if not cell.dead]
         self.cells_count = len(allcells)
 
-        theta0 = theta1 = None
-        flag0 = flag1 = False
+        theta = [None, None]
+        flag = [False, False]
 
-        try:
-            ti = pf()
-            theta0 = self.player0.strategy([c.copy() for c in allcells])
-            tf = pf()
-            self.timer[0] -= tf - ti
-        except Exception as e:
-            logging.error(traceback.format_exc())
-            flag0 = e
+        for i in 0, 1:
+            try:
+                ti = pf()
+                theta[i] = self.player[i].strategy([c.copy() for c in allcells])
+                tf = pf()
+                self.timer[i] -= tf - ti
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                flag[i] = e
 
-        try:
-            ti = pf()
-            theta1 = self.player1.strategy([c.copy() for c in allcells])
-            tf = pf()
-            self.timer[1] -= tf - ti
-        except Exception as e:
-            logging.error(traceback.format_exc())
-            flag1 = e
-
-        if self.check_point(flag0, flag1, "RUNTIME_ERROR"):
+        if self.check_point(flag[0], flag[1], "RUNTIME_ERROR"):
             return
 
-        if self.check_point(not isinstance(theta0, (int, float, type(None))), not isinstance(theta1, (int, float, type(None))), "INVALID_RETURN_VALUE"):
+        if self.check_point(not isinstance(theta[0], (int, float, type(None))), not isinstance(theta[1], (int, float, type(None))), "INVALID_RETURN_VALUE"):
             return
 
         if self.check_point(self.timer[0] < 0, self.timer[1] < 0, "TIMEOUT"):
             return
 
-        self.eject(self.cells[0], theta0)
-        self.eject(self.cells[1], theta1)
+        self.eject(self.cells[0], theta[0])
+        self.eject(self.cells[1], theta[1])
 
     def update_recorders(self):
         """Put values into recorders.
