@@ -1,246 +1,525 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
-<head>
-<meta charset="UTF-8">
-<title>OSMO Replay</title>
-<script src="https://cdn.jsdelivr.net/npm/sql.js/js/sql.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-<style>
-body {
-	color: #FFF;
-}
-#canvas {
-	position: fixed;
-	left: 0px;
-	top: 0px;
-	width: 100%;
-	height: 100%;
-	z-index: -1;
-	background-color: #1D40B5;
-}
-</style>
-</head>
-<body>
-<canvas id="canvas"></canvas>
 
-<input id="uploadfile" type="file" accept="*/*"/>
-<input id="uploadbutton" type="button" onclick="upload()" value="上传">
-<span>跟踪视角</span>
-<select id="select" onchange="changeTarget()">
-	<option value="0" selected>固定点</option>
-	<option value="1">星体</option>
-</select>
-<span>X</span>
-<input id="x" type="text" value="500" onchange="changeTarget()"/>
-<span>Y</span>
-<input id="y" type="text" value="250" onchange="changeTarget()"/>
-<span>ID</span>
-<input id="id" type="text" value="0" onchange="changeTarget()"/>
-<script>
-var camera = {
-	center: [500, 250],
-	scale: 1,
-	limit: [Math.min(canvas.width, canvas.height) / 3 / 500, Math.min(canvas.width, canvas.height) / 4 / 10],
-	adjusted: false,
-	target: null,
-	radius: null,
-	rect: function(ctx, X1, Y1, dX, dY) {
-		ctx.rect(this.scale * (X1 - this.center[0]) + canvas.width / 2, this.scale * (Y1 - this.center[1]) + canvas.height / 2, this.scale * dX, this.scale * dY);
-	},
-	arc: function(ctx, X, Y, R) {
-		min_x = Math.ceil((-this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
-		max_x = Math.floor((canvas.width + this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
-		min_y = Math.ceil((-this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
-		max_y = Math.floor((canvas.height + this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
-		for (var i = min_x; i <= max_x; i++) {
-			for (var j = min_y; j <= max_y; j++) {
-				ctx.beginPath();
-				ctx.arc(this.scale * (X - this.center[0]) + canvas.width / 2 + i * 1000 * this.scale, this.scale * (Y - this.center[1]) + canvas.height / 2 + j * 500 * this.scale, this.scale * R, 0, Math.PI * 2, true);
-				ctx.closePath();
+<head>
+	<meta charset="UTF-8">
+	<title>OSMO Replay</title>
+	<script src="https://cdn.jsdelivr.net/npm/sql.js/js/sql.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+	<style>
+		#canvas {
+			position: fixed;
+			left: 0px;
+			top: 0px;
+			width: 100%;
+			height: 100%;
+			z-index: -1;
+			background-color: rgb(230, 245, 255);
+		}
+
+		div.group {
+			width: 800px;
+			max-width: 100%;
+			padding: 10px;
+			transition: 0.5s all;
+			opacity: 0;
+		}
+
+		div.group div {
+			padding-left: 0px;
+		}
+
+		div.group:hover {
+			opacity: 1;
+		}
+
+		input.group {
+			width: 10em;
+		}
+	</style>
+</head>
+
+<body>
+	<canvas id="canvas"></canvas>
+	<div class='group'>
+		<input id="uploadfile" type="file" accept="*/*" onchange='upload()' />
+		<button class='btn btn-sm btn-success' id='btn_play'>播放/暂停</button>
+		<button class='btn btn-sm btn-success' id='btn_speed'>播放速度: 1x</button>
+		<span id='frame_display'>未选择文件</span>
+		<div class='group'>
+			<input type="range" min='0' max='4000' step='1' value="0" id="video_scroll" class='xscroll'
+				style='width:100%'>
+			<div class='group'>
+				<span>跟踪视角</span>
+				<select id="select" onchange="changeTarget()">
+					<option value="0" selected>固定点</option>
+					<option value="1">星体</option>
+				</select>
+				<span id='panel_camera_free'>
+					<span>X</span>
+					<input id="x" type="number" value="500" onchange="changeTarget()" class='group' />
+					<span>Y</span>
+					<input id="y" type="number" value="250" onchange="changeTarget()" class='group' />
+				</span>
+				<span id='panel_camera_target' style='display:none'>
+					<span>ID</span>
+					<input id="id" type="number" value="0" min=0 step=1 onchange="changeTarget()" class='group' />
+				</span>
+				<div class="group">
+					<button class='btn btn-sm' id='set_0'>形变效果</button>
+					<span id='set_1_inner'>
+						<button class='btn btn-sm' id='set_1'>暂停时形变</button>
+					</span>
+					<button class='btn btn-sm' id='set_2'>拖尾效果</button>
+					<!-- <button class='btn btn-sm' id='set_3'>显示头像</button> -->
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 辅助函数 -->
+	<script>
+		PLAYING = false
+		SCROLL_DRAGGING = false
+		CURR_FRAME = 0
+		PLAYING_SPEED = 1
+		SPEEDY_SHAPE = 1
+		SPEEDY_SHAPE_PAUSE = 1
+		TRACE = 1
+		SHOW_ICON = 0
+		function linear_color(rgb1, rgb2, min, max = null, pos = null) {
+			if (pos == null) pos = min
+			else if (min == max) pos = 0.5
+			else pos = (pos - min) / (max - min)
+			// pos = Math.max(1, Math.min(0, pos))
+			var tmp = []
+			for (var i = 0; i < 3; i++)
+				tmp.push(rgb1[i] + (rgb2[i] - rgb1[i]) * pos)
+			return tmp
+		}
+		function linear_alpha(rgba, min, max = null, pos = null) {
+			if (pos == null) pos = min
+			else if (min == max) pos = 0.5
+			else pos = (pos - min) / (max - min)
+			if (typeof rgba == 'string') {
+				rgba = rgba.slice(rgba.indexOf('(') + 1, rgba.lastIndexOf(')')).split(',').map(parseFloat)
+			}
+			pos = Math.max(1, Math.min(0, pos))
+			var tmp = rgba.slice(0, 3)
+			var alpha = (rgba[3] || 1) * pos
+			// if(tmp[0]>1||tmp[1]>1||tmp[2]>1)alpha=Math.floor(pos*255)
+			tmp.push(alpha)
+			return 'rgba(' + tmp.join(',') + ')'
+		}
+		function parse_color(clr) {
+			return 'rgba'.slice(0, clr.length) + '(' + clr.join(',') + ')'
+		}
+	</script>
+
+	<!-- 比赛解说 -->
+	<script>
+		function show_frame() {
+			if (!LOADED) return
+			document.getElementById('frame_display').innerHTML = (CURR_FRAME + 1) + '/' + TOTAL_FRAMES
+		}
+	</script>
+
+	<!-- 参数 -->
+	<script>
+		record_obj = {
+			data: []
+		}
+		LOADED = false
+		PLAYING = false
+		SCROLL_DRAGGING = false
+		CURR_FRAME = 0
+		TOTAL_FRAMES = 0
+		PLAYING_SPEED = 1
+		SPEEDY_SHAPE = 1
+		SPEEDY_SHAPE_PAUSE = 1
+		TRACE = 1
+		SHOW_ICON = 0
+	</script>
+
+	<!-- 读取数据库 -->
+	<script>
+		// 读取数据库数据
+		function upload() {
+			var file = $("#uploadfile").prop("files")[0];
+			if (!file) {
+				alert("请选择有效的文件");
+				return;
+			}
+			document.getElementById('frame_display').innerHTML = '读取中'
+			var reader = new FileReader();
+			reader.onload = function () {
+				var Uints = new Uint8Array(reader.result);
+				window.db = new SQL.Database(Uints);
+				var index = 0;
+				while (true) {
+					try {
+						result = db.exec("SELECT * FROM FRAME_" + index)
+						result = result[0].values
+						record_obj.data[index] = []
+						for (var i = 0; i < result.length; i++) {
+							record_obj.data[index].push(result[i].slice(1))
+						}
+						index++
+					}
+					catch (e) {
+						console.log(e);
+						TOTAL_FRAMES = index
+						scroller.max = index - 1
+						record_obj.data = record_obj.data.slice(0, TOTAL_FRAMES)
+						break
+					}
+				}
+				LOADED = true
+				if (!PLAYING) play_pause()
+			}
+			reader.readAsArrayBuffer(file);
+		}
+	</script>
+
+	<!-- 可视化 -->
+	<script>
+		var camera = {
+			center: [500, 250],
+			scale: 1,
+			limit: [Math.min(canvas.width, canvas.height) / 3 / 500, Math.min(canvas.width, canvas.height) / 4 / 10],
+			adjusted: false,
+			target: null,
+			radius: null,
+			rect: function (ctx, X1, Y1, dX, dY) {
+				ctx.rect(this.scale * (X1 - this.center[0]) + canvas.width / 2, this.scale * (Y1 - this.center[1]) + canvas.height / 2, this.scale * dX, this.scale * dY);
+			},
+			arc: function (ctx, X, Y, R, ID) {
+				min_x = Math.ceil((-this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
+				max_x = Math.floor((canvas.width + this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
+				min_y = Math.ceil((-this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
+				max_y = Math.floor((canvas.height + this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
+				for (var i = min_x; i <= max_x; i++) {
+					for (var j = min_y; j <= max_y; j++) {
+						var NX = this.scale * (X - this.center[0] + i * 1000) + canvas.width / 2
+						var NY = this.scale * (Y - this.center[1] + j * 500) + canvas.height / 2
+						ctx.beginPath();
+						ctx.arc(NX, NY, this.scale * R, 0, Math.PI * 2, true);
+						ctx.closePath();
+						ctx.fill();
+						this.player_wrap(ctx, NX, NY, this.scale * R, ID)
+					}
+				}
+			},
+			arc_speed: function (ctx, X, Y, VX, VY, R, ID) {
+				if (!(PLAYING || SPEEDY_SHAPE_PAUSE)) return this.arc(ctx, X, Y, R, ID)
+				if (this.target != null) {
+					var tmp = record_obj.data[CURR_FRAME][this.target]
+					VX -= tmp[2]
+					VY -= tmp[3]
+				}
+				min_x = Math.ceil((-this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
+				max_x = Math.floor((canvas.width + this.scale * R - (this.scale * (X - this.center[0]) + canvas.width / 2)) / (1000 * this.scale));
+				min_y = Math.ceil((-this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
+				max_y = Math.floor((canvas.height + this.scale * R - (this.scale * (Y - this.center[1]) + canvas.height / 2)) / (500 * this.scale));
+				var v = Math.sqrt(VX * VX + VY * VY)
+				var ra = R + v * 1.7, rb = R - v * 0.1
+				var dr = Math.atan2(VY, VX)
+				var nsplit = Math.max(10, Math.floor(R * this.scale * 0.4))
+				for (var i = min_x; i <= max_x; i++) {
+					for (var j = min_y; j <= max_y; j++) {
+						var NX = this.scale * (X - this.center[0] + i * 1000) + canvas.width / 2
+						var NY = this.scale * (Y - this.center[1] + j * 500) + canvas.height / 2
+						var NR = R * this.scale
+						ctx.beginPath();
+						for (var t1 = 0; t1 < nsplit * 2; t1++) {
+							var theta = t1 * Math.PI / nsplit
+							var x = ra * Math.cos(theta) * this.scale, y = rb * Math.sin(theta) * this.scale
+							var x1 = x * Math.cos(dr) - y * Math.sin(dr),
+								y1 = x * Math.sin(dr) + y * Math.cos(dr)
+							if (t1) ctx.lineTo(NX + x1, NY + y1)
+							else ctx.moveTo(NX + x1, NY + y1)
+							NR = Math.max(NR, x1, y1)
+						}
+						ctx.closePath();
+						ctx.fill();
+						this.player_wrap(ctx, NX, NY, NR, ID)
+					}
+				}
+			},
+			player_wrap: function (ctx, X, Y, R, ID) {
+				if (!(SHOW_ICON && (ID == 0 || ID == 1))) return
+				ctx.save();
+				ctx.clip();
+				ctx.drawImage(icons[ID], X - R, Y - R, R * 2, R * 2);
+				ctx.restore();
+			}
+		}
+
+		function parse_frame(index = null) {
+			if (index == null) index = CURR_FRAME
+			else {
+				CURR_FRAME = index
+				document.getElementById('video_scroll').value = CURR_FRAME
+			}
+			show_frame()
+			// 执行查询
+			var result = record_obj['data'][index];
+			// 解析数据
+			if (index >= TOTAL_FRAMES - 1) {
+				PLAYING = false
+			}
+			if (result) draw(result);
+			if (PLAYING) {
+				setTimeout(function () {
+					parse_frame(index + 1);
+				}, 1000 / 30 / PLAYING_SPEED);
+			}
+		}
+
+		function draw(frame = null) {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+			if (frame == null) frame = record_obj['data'][CURR_FRAME]
+			camera.limit = [Math.min(canvas.width, canvas.height) / 3 / 500, Math.min(canvas.width, canvas.height) / 4 / 10];
+			if (!camera.adjusted) {
+				camera.scale = Math.min(canvas.width / 1000, canvas.height / 500);
+			}
+			if (camera.target != null && frame[camera.target]) {
+				camera.center = [frame[camera.target][0], frame[camera.target][1]];
+				camera.radius = frame[camera.target][4];
+				camera.limit[1] = Math.min(canvas.width, canvas.height) / 4 / camera.radius;
+			}
+			var ctx = canvas.getContext("2d");
+			var shadows = true;
+			// Background
+			if (TRACE) {
+				ctx.fillStyle = PLAYING ? "rgba(230,245,255,0.6)" : "rgb(230,245,255)"
+				ctx.rect(0, 0, canvas.width, canvas.height);
 				ctx.fill();
 			}
+			else ctx.clearRect(0, 0, canvas.width, canvas.height);
+			// Level boundary
+			ctx.fillStyle = "rgba(255,255,255,0.15)"; // Background color of the level (inside the boundaries)
+			ctx.beginPath();
+			camera.rect(ctx, 0, 0, 1000, 500);
+			ctx.closePath();
+			ctx.fill();
+			if (shadows) {
+				ctx.strokeStyle = "rgba(0,0,0,0.3)";
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				camera.rect(ctx, 0, 0, 1000, 500);
+				ctx.closePath();
+				ctx.stroke();
+			}
+			ctx.strokeStyle = "rgba(255,255,255,0.3)";
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			camera.rect(ctx, 0, 0, 1000, 500);
+			ctx.closePath();
+			ctx.stroke();
+			for (var i = frame.length - 1; i >= 0; i--) {
+				var cell = frame[i]
+				draw_cell(ctx, shadows, i, cell[0], cell[1], cell[2], cell[3], cell[4]);
+			}
 		}
-	}
-}
-// 上传
-function upload() {
-	var file = $("#uploadfile").prop("files")[0];
-	if (!file) {
-		alert("请先选择数据库，再点击上传！");
-		return;
-	}
-	var reader = new FileReader();
-	reader.onload = function() {
-		var Uints = new Uint8Array(reader.result);
-		window.db = new SQL.Database(Uints);
-		parse_db(0);
-	}
-	reader.readAsArrayBuffer(file);
-	//var src = URL.createObjectURL(file);
-}
-// 读取数据库数据
-function parse_db(index) {
-	// 执行查询
-	var result = null;
-	try {
-		result = db.exec("SELECT * FROM FRAME_" + index);
-	}
-	catch(e) {
-		console.log(e);
-		setTimeout(function() {
-			parse_db(0);
-		}, 1000 / 30);
-	}
-	// 解析数据
-	if (!result) return;
-	draw(result);
-	clearTimeout(window.parse_event)
-	window.parse_event = setTimeout(function() {
-		parse_db(index + 1);
-	}, 1000 / 30);
-}
 
-function draw(frame) {
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-	camera.limit = [Math.min(canvas.width, canvas.height) / 3 / 500, Math.min(canvas.width, canvas.height) / 4 / 10];
-	if (!camera.adjusted) {
-		camera.scale = Math.min(canvas.width / 1000, canvas.height / 500);
-	}
-	if (camera.target != null && frame[0].values[camera.target]) {
-		camera.center = [frame[0].values[camera.target][1], frame[0].values[camera.target][2]];
-		camera.radius = frame[0].values[camera.target][5];
-		camera.limit[1] = Math.min(canvas.width, canvas.height) / 4 / camera.radius;
-	}
-	var ctx = canvas.getContext("2d");
-	var shadows = true;
-	// Background
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// Level boundary
-	ctx.fillStyle = "#2450E4"; // Background color of the level (inside the boundaries)
-	ctx.beginPath();
-	camera.rect(ctx, 0, 0, 1000, 500);
-	ctx.closePath();
-	ctx.fill();
-	if (shadows) {
-		ctx.strokeStyle = "rgba(0,0,0,0.3)";
-		ctx.lineWidth = 2;
-		ctx.beginPath();
-		camera.rect(ctx, 0, 0, 1000, 500);
-		ctx.closePath();
-		ctx.stroke();
-	}
-	ctx.strokeStyle = "#FFF";
-	ctx.lineWidth = 2;
-	ctx.beginPath();
-	camera.rect(ctx, 0, 0, 1000, 500);
-	ctx.closePath();
-	ctx.stroke();
-	for (var cell of frame[0].values) {
-		draw_cell(ctx, shadows, cell[0], cell[1], cell[2], cell[5]);
-	}
-}
-
-function draw_cell(ctx, shadow, ID, X, Y, R) {
-	ID -= 1;
-	// Shadow
-	if (shadow) {
-		ctx.fillStyle = "rgba(0,0,0,0.3)"; // gray
-		camera.arc(ctx, X + 1, Y + 3, R, 0);
-	}
-	ctx.fillStyle = "rgb(54,182,255)"; // blue
-	if ((camera.target == null && ID <= 1) || ID == camera.target) {
-		ctx.fillStyle = "green";
-	}
-	else if (camera.radius) {
-		if (ID <= 1) {
-			ctx.fillStyle = "rgb(68,255,26)"
+		function draw_cell(ctx, shadow, ID, X, Y, VX, VY, R) {
+			// Shadow
+			if (shadow) {
+				ctx.fillStyle = "rgba(0,0,0,0.3)"; // gray
+				if (SPEEDY_SHAPE) camera.arc_speed(ctx, X + 1, Y + 3, VX, VY, R, null)
+				else camera.arc(ctx, X + 1, Y + 3, R, null);
+			}
+			var fill = linear_color([160, 255, 140], [130, 130, 130], 0, 30, R); // linear gray-green
+			if (ID <= 1) {
+				fill = ID ? [255, 50, 35] : [11, 106, 184];
+			}
+			else if (ID == camera.target) {
+				fill = [0, 128, 0]
+			}
+			else if (camera.radius) {
+				if (ID <= 1) {
+					fill = [68, 255, 26]
+				}
+				else if (R > camera.radius) fill = [255, 68, 26]; // red
+				else if (camera.radius - R <= 4) {
+					var delta = camera.radius - R;
+					if (delta <= 2) {
+						var ref = [[255, 255], [68, 175], [26, 0]];
+						fill = ref.map(x => x[0] + (x[1] - x[0]) * delta / 4)
+					}
+					else {
+						delta -= 2;
+						var ref = [[255, 54], [175, 182], [0, 255]];
+						fill = ref.map(x => x[0] + (x[1] - x[0]) * delta / 4)
+					}
+				}
+			}
+			ctx.fillStyle = parse_color(fill)
+			if (SPEEDY_SHAPE) camera.arc_speed(ctx, X, Y, VX, VY, R, ID)
+			else camera.arc(ctx, X, Y, R, ID);
 		}
-		else if (R > camera.radius) ctx.fillStyle = "rgb(255,68,26)"; // red
-		else if (camera.radius - R <= 4) {
-			var delta = camera.radius - R;
-			if (delta <= 2) {
-				var ref = [[255, 255], [68, 175], [26, 0]];
-				ctx.fillStyle = "rgb(" + ref.map(x => x[0] + (x[1] - x[0]) * delta / 4).join(",") + ")";
+	</script>
+
+	<!-- 鼠标控制API -->
+	<script>
+		canvas.addEventListener("DOMMouseScroll", mouse_scroll, false);
+		canvas.addEventListener("mousewheel", mouse_scroll, false);
+
+
+		function mouse_scroll(event) {
+			event.preventDefault();
+			var delta = 0;
+			if (!event) event = window.event;
+			// normalize the delta
+			if (event.wheelDelta) {
+				// IE and Opera
+				delta = event.wheelDelta / 60;
+			}
+			else if (event.detail) {
+				// W3C
+				delta = -event.detail / 2;
+			}
+			delta = delta / Math.abs(delta);
+			if (delta != 0) {
+				camera.adjusted = true;
+				if (delta > 0) camera.scale *= 1.05;
+				if (delta < 0) camera.scale /= 1.05;
+				if (camera.scale < camera.limit[0]) camera.scale = camera.limit[0];
+				if (camera.scale > camera.limit[1]) camera.scale = camera.limit[1];
+			}
+			if (!PLAYING) draw()
+		}
+
+		function changeTarget() {
+			var panel_free = document.getElementById('panel_camera_free')
+			var panel_target = document.getElementById('panel_camera_target')
+			if (select.value == 0) {
+				camera.center[0] = x.value;
+				camera.center[1] = y.value;
+				camera.target = null;
+				camera.radius = null;
+				panel_free.style.display = 'inline-block'
+				panel_target.style.display = 'none'
 			}
 			else {
-				delta -= 2;
-				var ref = [[255, 54], [175, 182], [0, 255]];
-				ctx.fillStyle = "rgb(" + ref.map(x => x[0] + (x[1] - x[0]) * delta / 4).join(",") + ")";
+				camera.target = id.value;
+				panel_free.style.display = 'none'
+				panel_target.style.display = 'inline-block'
+			}
+			if (!PLAYING) parse_frame()
+			console.log(CURR_FRAME)
+		}
+
+		CANVAS_DRAGGING = false
+		CANVAS_DRAGPOS = null
+		OLD_CAMERA = null
+		function update_drag_canvas(e) {
+			dx = (CANVAS_DRAGPOS[0] - e.x) / camera.scale
+			dy = (CANVAS_DRAGPOS[1] - e.y) / camera.scale
+			tmp = [
+				Math.round(OLD_CAMERA[0] * 1 + dx),
+				Math.round(OLD_CAMERA[1] * 1 + dy)
+			]
+			document.getElementById('x').value = tmp[0]
+			document.getElementById('y').value = tmp[1]
+			camera.center = tmp
+
+			draw()
+		}
+		canvas.addEventListener("mousedown", function (e) {
+			if (camera.target != null) return
+			CANVAS_DRAGGING = true
+			CANVAS_DRAGPOS = [e.x, e.y]
+			OLD_CAMERA = camera.center
+		});
+		canvas.addEventListener('mouseup', function (e) {
+			CANVAS_DRAGGING = false
+			if (camera.target == null)
+				update_drag_canvas(e)
+		})
+		canvas.addEventListener('mousemove', function (e) {
+			if ((!CANVAS_DRAGGING) || camera.target != null) return
+			update_drag_canvas(e)
+		})
+
+	</script>
+
+	<!-- 播放进度控制 -->
+	<script>
+		function play_pause() {
+			PLAYING = !PLAYING
+			if (PLAYING) {
+				if (CURR_FRAME >= TOTAL_FRAMES - 1) CURR_FRAME = 0
+				parse_frame()
 			}
 		}
-	}
-	camera.arc(ctx, X, Y, R, 0);
-}
+		document.getElementById('btn_play').addEventListener('click', play_pause)
+		play_pause()
 
-canvas.addEventListener("DOMMouseScroll", mouse_scroll, false);
-canvas.addEventListener("mousewheel", mouse_scroll, false);
 
-function mouse_scroll(event) {
-	event.preventDefault();
-	var delta = 0;
-	if (!event) event = window.event;
-	// normalize the delta
-	if (event.wheelDelta) {
-		// IE and Opera
-		delta = event.wheelDelta / 60;
-	}
-	else if (event.detail) {
-		// W3C
-		delta = -event.detail / 2;
-	}
-	delta = delta / Math.abs(delta);
-	if (delta != 0) {
-		camera.adjusted = true;
-		if (delta > 0) camera.scale *= 1.05;
-		if (delta < 0) camera.scale /= 1.05;
-		if (camera.scale < camera.limit[0]) camera.scale = camera.limit[0];
-		if (camera.scale > camera.limit[1]) camera.scale = camera.limit[1];
-	}
-}
+		function switch_speed() {
+			PLAYING_SPEED *= 2
+			if (PLAYING_SPEED > 8) PLAYING_SPEED = 0.25
+			document.getElementById('btn_speed').innerHTML = '播放速度: @x'.replace('@', PLAYING_SPEED)
+		}
+		document.getElementById('btn_speed').addEventListener('click', switch_speed)
 
-function changeTarget() {
-	if (select.value == 0) {
-		camera.center[0] = x.value;
-		camera.center[1] = y.value;
-		camera.target = null;
-		camera.radius = null;
-	}
-	else {
-		camera.target = id.value;
-	}
-}
 
-CANVAS_DRAGGING = false
-CANVAS_DRAGPOS = null
-OLD_CAMERA = null
-function update_drag_canvas(e) {
-	dx = (CANVAS_DRAGPOS[0] - e.x) / camera.scale
-	dy = (CANVAS_DRAGPOS[1] - e.y) / camera.scale
-	tmp = [
-		Math.round(OLD_CAMERA[0] * 1 + dx),
-		Math.round(OLD_CAMERA[1] * 1 + dy)
-	]
-	document.getElementById('x').value = tmp[0]
-	document.getElementById('y').value = tmp[1]
-	camera.center = tmp
-}
-canvas.addEventListener("mousedown", function (e) {
-	if (camera.target != null) return
-	CANVAS_DRAGGING = true
-	CANVAS_DRAGPOS = [e.x, e.y]
-	OLD_CAMERA = camera.center
-});
-canvas.addEventListener('mouseup', function (e) {
-	CANVAS_DRAGGING = false
-	if (camera.target == null)
-		update_drag_canvas(e)
-})
-canvas.addEventListener('mousemove', function (e) {
-	if ((!CANVAS_DRAGGING) || camera.target != null) return
-	update_drag_canvas(e)
-})
+		var scroller = document.getElementById('video_scroll')
+		function update_scroll() {
+			if (SCROLL_DRAGGING) {
+				CURR_FRAME = scroller.value * 1
+				parse_frame()
+			}
+		}
 
-</script>
+		scroller.addEventListener('mousedown', () => {
+			PLAYING = false
+			SCROLL_DRAGGING = true
+			update_scroll()
+		})
+		window.addEventListener('mouseup', () => {
+			if (SCROLL_DRAGGING) {
+				SCROLL_DRAGGING = false
+				scroller.value = CURR_FRAME
+			}
+		})
+		scroller.addEventListener('mousemove', update_scroll)
+	</script>
+
+	<script>
+		button_pool = [
+			['形变效果', 'SPEEDY_SHAPE'],
+			['暂停时形变', 'SPEEDY_SHAPE_PAUSE'],
+			['拖尾效果', 'TRACE'],
+			['显示头像', 'SHOW_ICON'],
+		]
+		function update_settings() {
+			for (var i = 0; i < button_pool.length; i++) {
+				document.getElementById('set_' + i).innerHTML = button_pool[i][0] + (window[button_pool[i][1]] ? ': 开' : ': 关')
+			}
+			document.getElementById('set_1_inner').style.display = SPEEDY_SHAPE ? '' : 'none'
+		}
+
+		// 注册
+		function tmp(ind) {
+			function inner(e) {
+				e.preventDefault()
+				window[button_pool[ind][1]] = !window[button_pool[ind][1]]
+				update_settings()
+				draw()
+			}
+			return inner
+		}
+		for (var i = 0; i < button_pool.length; i++) {
+			document.getElementById('set_' + i).addEventListener('click', tmp(i))
+		}
+		update_settings()
+		draw()
+	</script>
+
 </body>
+
 </html>
