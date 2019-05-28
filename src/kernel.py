@@ -26,6 +26,7 @@ from consts import Consts
 from settings import Settings
 from world import World, WorldStat
 from database import Database
+import tkinter as tk
 
 # import custom codes
 null_print = lambda *a, **kw: 0
