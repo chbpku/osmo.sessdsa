@@ -29,11 +29,10 @@ import math
 from consts import Consts
 from settings import Settings
 from world import World
+from database import Database
 
 from sample.brownian_motion import Player as Player0
 from sample.cxk import Player as Player1
-
-from database import Database
 
 class Application(tk.Frame):
     def __init__(self, master = None):

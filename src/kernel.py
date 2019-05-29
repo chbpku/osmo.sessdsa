@@ -6,7 +6,7 @@
 #    /  __  \      /       ||   \/   |  /  __  \    #
 #   |  |  |  |    |   (----`|  \  /  | |  |  |  |   #
 #   |  |  |  |     \   \    |  |\/|  | |  |  |  |   #
-#   |  `--'  | .----)   |   |  |  |  | |  `--'  |   #
+#   |  `--"  | .----)   |   |  |  |  | |  `--"  |   #
 #    \______/  |_______/    |__|  |__|  \______/    #
 #                                                   #
 #                                                   #
@@ -25,11 +25,10 @@
 from consts import Consts
 from settings import Settings
 from world import World, WorldStat
+from database import Database
 
 from sample.brownian_motion import Player as Player0
 from sample.cxk import Player as Player1
-
-from database import Database
 
 if __name__ == "__main__":
     # Storage across rounds
@@ -37,12 +36,12 @@ if __name__ == "__main__":
 
     while True:
         # Recorders
-        recorders = [WorldStat(Consts["MAX_FRAME"]) for i in 'xx']
+        recorders = [WorldStat(Consts["MAX_FRAME"]) for i in "xx"]
         for s, r in zip(storages, recorders):
-            s['world'] = r
+            s["world"] = r
         # World
         world = World(
-            Player0(0, storages[0]), Player1(1, storages[1]), ['Plr1', 'Plr2'],
+            Player0(0, storages[0]), Player1(1, storages[1]), ["Plr1", "Plr2"],
             recorders)
 
         while not world.result:
