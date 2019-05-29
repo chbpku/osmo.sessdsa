@@ -25,7 +25,6 @@
 import tkinter as tk
 from platform import system
 import math
-import time
 
 from consts import Consts
 from settings import Settings
@@ -43,9 +42,6 @@ class Application(tk.Frame):
         self.master.title("Osmo")
         self.world = World(Player0(0), Player1(1))
         self.paused = False
-        # For timer
-        self.frame_delta = None
-        self.last_tick = int(round(time.time() * 1000))
         # For GUI
         self.pack()
         self.create_widgets()
@@ -157,9 +153,6 @@ class Application(tk.Frame):
 
         """
         # Advance timer
-        current_tick = int(round(time.time() * 1000))
-        self.frame_delta = (current_tick - self.last_tick) * Consts["FPS"] / 1000
-        self.last_tick = current_tick
         self.master.after(int(1000 / Consts["FPS"]), self.refresh_screen)
         if self.world.result:
             if Settings["ENABLE_DATABASE"] and not self.world.result["saved"]:

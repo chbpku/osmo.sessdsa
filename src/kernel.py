@@ -22,8 +22,6 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 
-import time
-
 from consts import Consts
 from settings import Settings
 from world import World, WorldStat
@@ -46,15 +44,9 @@ if __name__ == "__main__":
         world = World(
             Player0(0, storages[0]), Player1(1, storages[1]), ['Plr1', 'Plr2'],
             recorders)
-        # For timer
-        frame_delta = None
-        last_tick = int(round(time.time() * 1000))
 
         while not world.result:
             # Advance timer
-            current_tick = int(round(time.time() * 1000))
-            frame_delta = (current_tick - last_tick) * Consts["FPS"] / 1000
-            last_tick = current_tick
             world.update(Consts["FRAME_DELTA"])
         else:
             if Settings["ENABLE_DATABASE"] and not world.result["saved"]:
