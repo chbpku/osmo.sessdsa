@@ -118,15 +118,15 @@ python3 -m http.server
 
 各组需要编写类`Player`，其必须包含至少两个实例方法：`__init__`和`strategy`，其参数及要求返回值如下：
 
-def __init__(self, id, arg)
+`def __init__(self, id, arg)`
 
-id为星体编号（0或1）。
+`id`为星体编号（0或1）。
 
-arg为一个字典，其中['world']项为world.py中的WorldStat类，包含三个属性：`total_frames`为总游戏帧数，`frame`为当前帧数，`timer`为一个list，第0，1项分别为两玩家剩余思考时间（单位为秒）。而其余项均在每局游戏间（即两个玩家的所有对局中）保留，玩家可自行在其中添加或改变项，通过之前的战斗历史来适当改变策略。
+`arg`为一个字典，其中`['world']`项为`world.py`中的`WorldStat`类，包含三个属性：`total_frames`为总游戏帧数，`frame`为当前帧数，`timer`为一个list，第0，1项分别为两玩家剩余思考时间（单位为秒）。而其余项均在每局游戏间（即两个玩家的所有对局中）保留，玩家可自行在其中添加或改变项，通过之前的战斗历史来适当改变策略。
 
-def strategy(self, allcells)
+`def strategy(self, allcells)`
 
-allcells为一个list，其中包含所有当前存活的星体。编号0，1的星体为玩家星体，之后所有星体均为自由星体。
+`allcells`为一个list，其中包含所有当前存活的星体。编号0，1的星体为玩家星体，之后所有星体均为自由星体。
 
 **注意：星体在`allcells`中的索引可能与前述的星体编号不同，星体编号用每个`Cell`的`id`属性表示。**
 
