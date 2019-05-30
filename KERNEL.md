@@ -126,6 +126,7 @@ python3 -m http.server
 * `total_frames`：总游戏帧数
 * `frame`：当前帧数
 * `timer`：一个list，第0，1项分别为两玩家剩余思考时间（单位为秒）
+
 `arg`的其余项均在每局游戏间（即两个玩家的所有对局中）保留，玩家可自行在其中添加或改变项，通过之前的战斗历史来适当改变策略。
 
 `def strategy(self, allcells)`
