@@ -219,10 +219,11 @@ class World():
                         collisions[self.cells[j].collide_group].append(i)
                         self.cells[i].collide_group = self.cells[j].collide_group
                     elif self.cells[i].collide_group != self.cells[j].collide_group:
-                        collisions[self.cells[i].collide_group] += collisions[self.cells[j].collide_group]
-                        for ele in collisions[self.cells[j].collide_group]:
+                        tmp = self.cells[j].collide_group
+                        collisions[self.cells[i].collide_group] += collisions[tmp]
+                        for ele in collisions[tmp]:
                             self.cells[ele].collide_group = self.cells[i].collide_group
-                        collisions[self.cells[j].collide_group] = []
+                        collisions[tmp] = []
         # Run absorbs
         for collision in collisions:
             if collision != []:
