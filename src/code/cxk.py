@@ -37,7 +37,7 @@ class Player():
             from pygame import mixer
             self.mixer = mixer
             self.mixer.init()
-            self.mixer.music.load(os.path.join(os.getcwd(), "sample/jntm.mp3"))
+            self.mixer.music.load(os.path.join(os.getcwd(), "code/jntm.mp3"))
         else:
             self.mixer = None
 
