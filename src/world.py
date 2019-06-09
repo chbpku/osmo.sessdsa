@@ -33,18 +33,18 @@ from consts import Consts
 from cell import Cell
 
 class World():
-    def __init__(self, player0, player1, names = None, recorders = None):
+    def __init__(self, player0, player1, names = None, recorders = None, seed = None):
         # Variables and setup
         self.cells_count = 0
         # Bind stat recorders
         self.recorders = recorders
         # Init
-        self.new_game()
+        self.new_game(seed)
         self.player = [player0, player1]
         self.names = names
 
     # Methods
-    def new_game(self):
+    def new_game(self, seed):
         """Create a new game.
 
         Args:
@@ -62,6 +62,8 @@ class World():
         self.cells.append(Cell(0, [Consts["WORLD_X"] / 4, Consts["WORLD_Y"] / 2], [0, 0], Consts["DEFAULT_RADIUS"]))
         self.cells.append(Cell(1, [Consts["WORLD_X"] / 4 * 3, Consts["WORLD_Y"] / 2], [0, 0], Consts["DEFAULT_RADIUS"]))
         # Generate a bunch of random cells
+        if seed:
+            random.seed(seed)
         for i in range(Consts["CELLS_COUNT"]):
             if i < 4:
                 rad = 1.5 + (random.random() * 1.5) # Small cells

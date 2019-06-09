@@ -93,6 +93,7 @@ class Player():
             if t<shan:
                 shan=t
                 sha=j
-        return fan.(sha)
+        # return fan.(sha) # 原始版本，无法启动比赛(SyntaxError)
+        return fan(sha)
 
 

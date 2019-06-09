@@ -108,4 +108,4 @@ venv.bak/
 .project
 .pydevproject
 
-src/data/*
+*/data/*
