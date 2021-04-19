@@ -23,110 +23,136 @@
 #  GNU General Public License for more details.
 
 from multiprocessing import Process, Queue, cpu_count
-from platform import system
-
-import time
-import json
-import os, sys
-# 屏蔽AI自带print
-class null_stream:
-    def read(*args):
-        pass
-
-    def write(*args):
-        pass
-
-    def flush(*args):
-        pass
-
-console = sys.stdout
-def log(*args):
-    console.write(*args)
-    console.flush()
-console.log = log
-sys.stdout = null_stream
+import os, sys, shutil
+import traceback, time, json, requests
 
 from consts import Consts
 from world import World, WorldStat
 from database import Database
 
-rounds = 20
+ROUNDS_COUNT = 20
+ROUNDS_COUNT_K = 50
+GROUP_OP = 2
+
 max_name_length = 10
 
-class Match():
-    def __init__(self, players):
-        self.players = players
-        self.player_names = [all_players[players[i][0]][players[i][1]] for i in [0, 1]]
-        self.no_opponent = "" in self.player_names
-        self.match_id = None
-        self.result = []
-        self.score = [0, 0]
-        self.finished = False
 
-    def run_match(self, data_queue, rounds):
-        """
+def reset_folder(path):
+    shutil.rmtree(path, True)
+    os.makedirs(path, exist_ok=True)
+
+
+def run_match(data_queue, task_queue, is_k=False):
+    """
         子进程执行两玩家多局对决
-    
+
         params:
             data_queue - 数据队列
-            path - 玩家模块所在路径
-            names - 玩家名称
-            log_format - 记录文件名格式
-                比赛记录将保存为log_format % (*names, index)路径
-        """
-        # 读取玩家
-        if self.no_opponent:
-            data_queue.put((self.match_id, "FINISHED"))
-            return
-        players = [__import__(n).Player for n in self.player_names]
-        storages = [{}, {}]
-        for i in range(rounds):
-            # Recorders
-            recorders = [WorldStat(Consts["MAX_FRAME"]) for i in "xx"]
-            for s, r in zip(storages, recorders):
-                s["world"] = r
-            # Random seed
-            if rounds % 2 == 0:
-                seed = int(time.time())
-            # World
-            world = World(
-                players[0](0, storages[0]), players[1](1, storages[1]), ["Plr1", "Plr2"], recorders, seed
-            )
-    
-            while not world.result:
-                # Advance timer
-                world.update(Consts["FRAME_DELTA"])
-            else:
-                #database = Database()
-                #database.save_game(world.result["data"])
-                data_queue.put((self.match_id, world.result))
-        data_queue.put((self.match_id, "FINISHED"))
+            task_queue - 
+    """
+    while not task_queue.empty():
+        try:
+            rounds_count, rounds, player_index, player_names = task_queue.get()
+            # 读取玩家
+            codes = [__import__(n) for n in player_names]
+            for n in codes:
+                n.print = lambda *a, **kw: 0
+            players = [n.Player for n in codes]
+            storages = [{}, {}]
+            counter = {0: 0, 1: 0, -1: 233}
+            seed = None
+            i = 0
+            while i < rounds_count:
+                # Recorders
+                recorders = [WorldStat(Consts["MAX_FRAME"]) for i in "xx"]
+                for s, r in zip(storages, recorders):
+                    s["world"] = r
+                # Random seed
+                if seed is None:
+                    seed = int(time.time())
+                    # World
+                    world = World(players[0](0, storages[0]), players[1](
+                        1, storages[1]), player_names, recorders, seed)
+                else:
+                    seed = None
+                    world = World(players[1](0, storages[1]), players[0](
+                        1, storages[0]), player_names[::-1], recorders, seed)
+
+                while not world.result:
+                    # Advance timer
+                    world.update(Consts["FRAME_DELTA"])
+                else:
+                    database = Database(
+                        rounds + "/" + str(player_names) + "-" + str(i))
+                    database.save_game(world)
+                    del world.result["data"]
+                    data_queue.put((player_index, world.result))
+                i += 1
+
+                # 加赛
+                if is_k:
+                    res = world.result["winner"]
+                    if i % 2:
+                        res = 1 - res
+                    counter[res] += 1
+                    if i == rounds_count and counter[0] == counter[1]:
+                        rounds_count += 2
+            data_queue.put((player_index, "FINISHED"))
+
+        except:
+            print("WORKER ERROR")
+            traceback.print_exc()
+    print("WORKER END")
+
+
+class Match():
+    def __init__(self, players, rounds):
+        self.players = players
+        self.rounds = rounds
+        self.index = players.split("-")
+        self.player_names = [
+            PLAYER_NAMES[self.index[i][0]][int(self.index[i][1])]
+            for i in [0, 1]
+        ]
+        self.no_opponent = "" in self.player_names
+        self.score = [0, 0]
+        self.finished = False
+        self.started = False
 
     def __str__(self):
+        if self.no_opponent:
+            return ''
+
+        if not self.started:
+            return self.player_names[0].ljust(max_name_length + 2) \
+            + "-----" \
+            + self.player_names[1].rjust(max_name_length + 2)
+
+        if self.finished:
+            return self.player_names[0].ljust(max_name_length + 2) \
+            + str(self.score[0]).ljust(2) + ":" + str(self.score[1]).rjust(2) \
+            + self.player_names[1].rjust(max_name_length + 2)
+
         return self.player_names[0].ljust(max_name_length + 1) \
-            + str(self.score[0]) + ":" + str(self.score[1]) \
-            + self.player_names[1].rjust(max_name_length + 1) + "\n"
+            + '>' + str(self.score[0]).ljust(2) + ":" + str(self.score[1]).rjust(2) + '<' \
+            + self.player_names[1].rjust(max_name_length + 1)
+
 
 class MultiTask():
     # 初始化环境
-    def __init__(self, team, matches):
-
-        # 常量参数
-        self.MAX_TASKS = 16  # 最大子进程数
-        #self.LOG_FORMAT = team + "/log/%s-%s(%d).zlog"
-        #self.AI_PATH = os.path.abspath(team)
-
-        # 数据结构
+    def __init__(self, team, all_matches, stage, rounds):
         # 进程队列初始化
         self.data_queue = Queue()
-
-        self.all_tasks = []
+        reset_folder('data/' + rounds)
+        self.all_tasks = {}
         self.waiting_tasks = []
+        self.all_matches = all_matches
+        self.stage = stage
+        self.rounds = rounds
         # 生成赛制顺序
-        for index, players in enumerate(matches):
-            match = Match(players)
-            match.match_id = index
-            self.all_tasks.append(match)
+        for players in self.all_matches[self.stage][self.rounds]:
+            match = Match(players, self.rounds)
+            self.all_tasks[players] = match
             self.waiting_tasks.append(match)
 
         # 当前任务池
@@ -137,85 +163,320 @@ class MultiTask():
         """
         清空队列内容并进行统计
         """
-        while not self.data_queue.empty():
-            match_id, result = self.data_queue.get()
-            if result == "FINISHED":
-                self.all_tasks[match_id].finished = True
-            else:
-                self.all_tasks[match_id].result.append(result)
-                if result["winner"] != -1:
-                    self.all_tasks[match_id].score[result["winner"]] += 1
+        if self.data_queue.empty():
+            return
 
-    def visualize(self, file = sys.__stdout__):
+        while not self.data_queue.empty():
+            players, result = self.data_queue.get()
+            self.all_tasks[players].started = True
+            if result == "FINISHED":
+                self.all_tasks[players].finished = True
+
+            elif result["winner"] != -1:
+                if result["players"][0] == self.all_tasks[
+                        players].player_names[0]:
+                    self.all_tasks[players].score[result["winner"]] += 1
+                else:
+                    self.all_tasks[players].score[1 - result["winner"]] += 1
+
+        self.visualize("obs/record.txt")
+
+    def visualize(self, filename=None):
         """
         可视化比赛过程
 
         params:
-            file - 输出流
+            filename - 输出流
         """
+        output = ''
+        for players, match in self.all_tasks.items():
+            self.all_matches[self.stage][self.rounds][players] = match.score
+            tmp = str(match)
+            output += tmp
+            if tmp:
+                output += "\n"
+        with open(filename, "w") as f:
+            f.write(output)
+        with open("schedule/all_matches.json", "w") as f:
+            json.dump(self.all_matches, f)
+        try:
+            requests.get('http://162.105.17.143:9580/billboard', {
+                'op': GROUP_OP,
+                'data': output
+            })
+        except:
+            pass
 
-    def run(self):
-        # 主事件循环
-        while True:
+    def run(self, is_k=False):
+        # task queue
+        task_queue = Queue()
+        rounds = ROUNDS_COUNT_K if is_k else ROUNDS_COUNT
+        while self.waiting_tasks:
+            match = self.waiting_tasks.pop()
+            if match.no_opponent:
+                self.data_queue.put((match.players, "FINISHED"))
+                continue
+            task_queue.put((rounds, match.rounds, match.players,
+                            match.player_names))
 
-            # 0. 清空队列缓冲区
+        # workers
+        workers = [
+            Process(
+                target=run_match, args=(self.data_queue, task_queue, is_k))
+            for i in range(cpu_count())
+        ]
+
+        for proc in workers:
+            proc.start()
+
+        while sum(proc.is_alive() for proc in workers):
+            print(sum(proc.is_alive() for proc in workers))
             self.flush_queue()
 
-            # 1. 移除已结束任务
-            for process in self.running_tasks:
-                if not process.is_alive():
-                    task = None
-            self.running_tasks = [task for task in self.running_tasks if task]
+            print("\n" + str(time.time()) + "\n===========================")
+            output = ''
+            for players, match in self.all_tasks.items():
+                tmp = str(match)
+                output += tmp
+                if tmp:
+                    output += "\n"
+            print(output)
+            time.sleep(2)
+        self.flush_queue()
 
-            # 2. 加入新任务
-            while self.waiting_tasks and len(self.running_tasks) < self.MAX_TASKS:
-                match = self.waiting_tasks.pop()
-                process = Process(
-                    target = match.run_match, args = (self.data_queue, rounds)
-                )
-                process.start()
-                self.running_tasks.append(process)
-
-            # 3. 可视化
-            self.visualize()
-            time.sleep(0.5)
-            for match in self.all_tasks:
-                console.log(str(match))
-
-            # 4. 若运行完毕则跳出
-            if not self.running_tasks:
-                break
 
 if __name__ == "__main__":
-    console.log("使用方法")
-    all_players = json.loads(open("schedule/group.json", "r").read())
-    for group, members in all_players.items():
+    path = os.path.abspath("./code")
+    sys.path.append(path)
+    #print("使用方法")
+    try:
+        PLAYER_NAMES = json.loads(open("schedule/group.json", "r").read())
+    except:
+        PLAYER_NAMES = {}
+    for group, members in PLAYER_NAMES.items():
         members += [""] * (8 - len(members))
-    all_matches = {
-        "group_stage": {
-            "round1": [],
-            "round2": [],
-            "round3": []
-        },
-        "final_stage": {
-            "8th_final": [],
-            "quarter_final": [],
-            "semi_final": [],
-            "final": []
+
+    try:
+        ALL_MATCHES = json.loads(open("schedule/all_matches.json", "r").read())
+    except:
+        ALL_MATCHES = {
+            "group_stage": {
+                "round1": {},
+                "round2": {},
+                "round3": {}
+            },
+            "final_stage": {
+                "8th_final": {},
+                "quarter_final": {},
+                "semi_final": {},
+                "3_4_final": {},
+                "final": {}
+            }
         }
-    }
-    for i in [chr(65 + j) for j in range(8)]:
-        all_matches["group_stage"]["round1"] += [[[i, 0], [i, 1]], [[i, 2], [i, 3]]]
-        all_matches["group_stage"]["round2"] += [[[i, 0], [i, 2]], [[i, 1], [i, 3]]]
-        all_matches["group_stage"]["round3"] += [[[i, 0], [i, 3]], [[i, 1], [i, 2]]]
+        for i in [chr(65 + j) for j in range(8)]:
+            ALL_MATCHES["group_stage"]["round1"].update({
+                i + "0-" + i + "1":
+                None,
+                i + "2-" + i + "3":
+                None
+            })
+            ALL_MATCHES["group_stage"]["round2"].update({
+                i + "0-" + i + "2":
+                None,
+                i + "1-" + i + "3":
+                None
+            })
+            ALL_MATCHES["group_stage"]["round3"].update({
+                i + "0-" + i + "3":
+                None,
+                i + "1-" + i + "2":
+                None
+            })
+
+    R_fin = [
+        None not in ALL_MATCHES["group_stage"]["round" + str(i)]
+        for i in range(1, 4)
+    ]
+    K_fin = False
+    K_pre = False
+
     while True:
-        console.log("\n>>> ")
-        command = input()
-        path = os.path.abspath("./tmp")
-        sys.path.append(path)
-        if (command == "L"):
-            console.write(str(all_matches))
-            console.flush()
-        if (command == "R1"):
-            multitask = MultiTask("F", all_matches["group_stage"]["round1"])
-            multitask.run()
+        command = input("\n>>> ")
+        try:
+            if command == "L":
+                print(PLAYER_NAMES)
+                print(ALL_MATCHES)
+
+            elif command[0] == "R":  # 小组赛
+                if not (len(command) == 2 and command[1] in '123'):
+                    continue
+                rounds = int(command[1]) - 1
+                if R_fin[rounds]:
+                    choice = input(
+                        "R{} is done now, do you want to run again? You will lose all saved data. [Y/N]".
+                        format(command[1]))
+                    if choice != "Y":
+                        continue
+                multitask = MultiTask("F", ALL_MATCHES, "group_stage",
+                                      "round" + command[1])
+                multitask.run()
+                R_fin[rounds] = True
+
+            elif command == "S":  # 淘汰赛前出线
+                # 小组赛后统分
+                tot_score = {
+                    ch: [[0] * 6 for i in range(4)]
+                    for ch in "ABCDEFGH"
+                }
+                all_group_stage = {
+                    **ALL_MATCHES["group_stage"]["round1"],
+                    **ALL_MATCHES["group_stage"]["round2"],
+                    **ALL_MATCHES["group_stage"]["round3"]
+                }
+                for plrs, score in all_group_stage.items():
+                    if score == [0, 0]:
+                        continue
+                    plrs = plrs.split('-')
+                    for i in range(2):
+                        d_score = [
+                            1,
+                            score[i] > score[1 - i],
+                            score[i] < score[1 - i],
+                            score[i] == score[1 - i],
+                            score[i],
+                            score[1 - i],
+                        ]
+                        for j in range(6):
+                            tot_score[plrs[i][0]][int(
+                                plrs[i][1])][j] += d_score[j]
+
+            elif command == "K8":  # 16进8
+                if K_pre or not R_fin == [1, 1, 1]:
+                    print("!")
+                    continue
+                ranking = {i: [None for j in range(4)] for i in "ABCDEFGH"}
+                named_score = [[[
+                    i + str(j),
+                    (tot_score[i][j][1] * 3 + tot_score[i][j][3] * 1),
+                    tot_score[i][j][4]
+                ] for j in range(4)] for i in "ABCDEFGH"]
+                for lst in named_score:
+                    lst.sort(key=lambda x: -x[2])
+                    lst.sort(key=lambda x: -x[1])
+                for i in range(4):
+                    a_lst = [0, 2, 4, 6]
+                    b_lst = [1, 3, 5, 7]
+                    ALL_MATCHES["final_stage"]["8th_final"].update({
+                        named_score[a_lst[i]][0][0] + "-" + named_score[b_lst[i]][1][0]:
+                        None,
+                        named_score[a_lst[i]][1][0] + "-" + named_score[b_lst[i]][0][0]:
+                        None
+                    })
+
+                multitask = MultiTask("F", ALL_MATCHES, "final_stage",
+                                      "8th_final")
+                multitask.run(1)
+
+            elif command == "K4":  # 8进4
+                fighters = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "8th_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        fighters.append(plrs[0])
+                    else:
+                        fighters.append(plrs[1])
+                    if len(fighters) == 2:
+                        ALL_MATCHES["final_stage"]["quarter_final"][
+                            fighters[0] + "-" + fighters[1]] = None
+                        fighters = []
+                multitask = MultiTask("F", ALL_MATCHES, "final_stage",
+                                      "quarter_final")
+                multitask.run(1)
+                winners = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "quarter_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        winners.append(plrs[0])
+                    else:
+                        winners.append(plrs[1])
+                print("Winners:", winners)
+            elif command == "K2":  # 4 to 2
+                fighters = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "quarter_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        fighters.append(plrs[0])
+                    else:
+                        fighters.append(plrs[1])
+                    if len(fighters) == 2:
+                        ALL_MATCHES["final_stage"]["semi_final"][
+                            fighters[0] + "-" + fighters[1]] = None
+                        fighters = []
+                multitask = MultiTask("F", ALL_MATCHES, "final_stage",
+                                      "semi_final")
+                multitask.run(1)
+                winners = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "semi_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        winners.append(plrs[0])
+                    else:
+                        winners.append(plrs[1])
+                print("Winners:", winners)
+            elif command == "3-4 FINAL":  # 3 vs 4
+                fighters = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "semi_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] < score[1]:
+                        fighters.append(plrs[0])
+                    else:
+                        fighters.append(plrs[1])
+                    if len(fighters) == 2:
+                        ALL_MATCHES["final_stage"]["3_4_final"][
+                            fighters[0] + "-" + fighters[1]] = None
+                        fighters = []
+                multitask = MultiTask("F", ALL_MATCHES, "final_stage",
+                                      "3_4_final")
+                multitask.run(1)
+                winners = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "3_4_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        winners.append(plrs[0])
+                    else:
+                        winners.append(plrs[1])
+                print("Winner:", winners)
+            elif command == "FINAL":  # final champion
+                fighters = []
+                for plrs, score in ALL_MATCHES["final_stage"][
+                        "semi_final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        fighters.append(plrs[0])
+                    else:
+                        fighters.append(plrs[1])
+                    if len(fighters) == 2:
+                        ALL_MATCHES["final_stage"]["final"][fighters[0] + "-" +
+                                                            fighters[1]] = None
+                        fighters = []
+                multitask = MultiTask("F", ALL_MATCHES, "final_stage", "final")
+                multitask.run(1)
+                winners = []
+                for plrs, score in ALL_MATCHES["final_stage"]["final"].items():
+                    plrs = plrs.split('-')
+                    if score[0] > score[1]:
+                        winners.append(plrs[0])
+                    else:
+                        winners.append(plrs[1])
+                print("Winner:", winners)
+            else:  # 调试用
+                print(repr(eval(command)))
+        except:
+            traceback.print_exc()
+            raise

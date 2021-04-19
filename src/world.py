@@ -121,12 +121,12 @@ class World():
             "data": self.database,
             "saved": False
         }
-        print("Winner Winner Chicken Dinner!")
-        if winner != -1:
-            print("Winner: Player {}.".format(winner))
-        else:
-            print("Game ends in a draw.")
-        print(cause)
+        #print("Winner Winner Chicken Dinner!")
+        #if winner != -1:
+        #    print("Winner: Player {}.".format(winner))
+        #else:
+        #    print("Game ends in a draw.")
+        #print(cause)
 
     def eject(self, player, theta):
         """Create a new cell after the ejection process.
